@@ -1,0 +1,104 @@
+---
+title: "Running cn.mops on 20 teosinte from Palmar Chico"
+author: "Simon Renny-Byfield"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This document records efforts to run the `R` package [`cn.mops`](http://www.bioconductor.org/packages/release/bioc/html/cn.mops.html) on 20 teosinte individuals from the Palmar Chico population, Mexico. As input to the program I have sorted `.bam` files (mapped by Vince Buffalo using [paap.py](https://github.com/vsbuffalo/paap)). These files symlinked in `/group/jrigrp4/cn.mops/data` from another location `/group/jrigrp4/teosinte-parents/aln/`.
+
+Working in the `/group/jrigrp4/cn.mops/` directory I indexed the appropriate `.bam` files using the following scrip `scripts/index.bam.sh`:
+```
+#!/bin/bash -l
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/output
+#SBATCH -o /group/jrigrp4/cn.mops/logs/index_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/index_err_log-%j.txt
+#SBATCH -J index
+#SBATCH --array=0-19
+#SBATCH --mem-per-cpu=8000
+
+##Simon Renny-Byfield, UC Davis, December 16 2014
+
+
+echo "Starting Job:"
+date
+
+files=($(ls -d ../data/*sorted.bam))
+
+#now index each .bam file
+
+cmd="samtools index ${files[$SLURM_ARRAY_TASK_ID]}"
+echo $cmd
+eval $cmd
+
+echo "End Job: "
+date
+```
+
+Follwoing this I modified a script the Jinliang gave me. This script reads in the bam files, assess coverage and outputs `.bed` style output for CNVs and PAVs. The script is saved as `scripts/cnv_cnmpos.R`.
+```
+# Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("cn.mops")
+
+library(cn.mops)
+BAMFiles <- list.files(path="/group/jrigrp4/teosinte-parents/aln", pattern="sorted.bam$")
+print(BAMFiles)
+setwd("~/CNVer/bams")
+chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired")
+#Window length set to: 3000
+setwd("/group/jrigrp4/cn.mops/output")
+#resHaplo <- haplocn.mops(bamDataRanges)
+#resCN <- calcIntegerCopyNumbers(resHaplo)
+#This function performs the cn.mops algorithm for copy number detection in NGS data
+res <- cn.mops(bamDataRanges)
+resCNV <- calcIntegerCopyNumbers(res)
+
+### transform GRanges to data.frame
+mycnv <- cnvr(resCNV)
+
+
+cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+callcnv <- mcols(mycnv)
+cnvdf <- cbind(cnvdf, callcnv)
+
+save(file="bamDataRanges.RData", list=c("bamDataRanges","cnvdf") )
+```
+
+Importantly this must be run from insde a slurm script. I used the following to get the job done:
+```
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/output
+#SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
+#SBATCH -J cn.mops
+#SBATCH --mem=12000
+
+export R_LIBS="~/R/x86_64-pc-linux-gnu-library/3.1"
+
+echo "Starting cn.mops job: "
+date
+
+cmd="Rscript ../scripts/cnv_cnmpos.R"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```
+
+
+
+
