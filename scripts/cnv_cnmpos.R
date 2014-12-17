@@ -1,0 +1,33 @@
+# Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("cn.mops")
+
+library(cn.mops)
+BAMFiles <- list.files(path="/group/jrigrp4/teosinte-parents/aln", pattern="sorted.bam$")
+print(BAMFiles)
+setwd("~/CNVer/bams")
+chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired")
+#Window length set to: 3000
+setwd("/group/jrigrp4/cn.mops/output")
+#resHaplo <- haplocn.mops(bamDataRanges)
+#resCN <- calcIntegerCopyNumbers(resHaplo)
+#This function performs the cn.mops algorithm for copy number detection in NGS data
+res <- cn.mops(bamDataRanges)
+resCNV <- calcIntegerCopyNumbers(res)
+
+### transform GRanges to data.frame
+mycnv <- cnvr(resCNV)
+
+
+cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+callcnv <- mcols(mycnv)
+cnvdf <- cbind(cnvdf, callcnv)
+
+save(file="bamDataRanges.RData", list=c("bamDataRanges","cnvdf") )
+
+
