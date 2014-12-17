@@ -11,7 +11,11 @@ BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$"
 print(BAMFiles[1:3])
 setwd("/group/jrigrp4/cn.mops/data")
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+<<<<<<< HEAD
 bamDataRanges <- getReadCountsFromBAM(BAMFiles[1:3], refSeqName=chrs,  mode="paired")
+=======
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired",WL=100)
+>>>>>>> c3baeadb57633814a33288ad814469fd02272d4a
 #Window length set to: 3000
 setwd("/group/jrigrp4/cn.mops/output")
 #resHaplo <- haplocn.mops(bamDataRanges)
