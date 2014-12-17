@@ -7,11 +7,11 @@
 #biocLite("cn.mops")
 
 library(cn.mops)
-BAMFiles <- list.files(path="/group/jrigrp4/teosinte-parents/aln", pattern="sorted.bam$")
-print(BAMFiles)
-setwd("~/CNVer/bams")
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$")
+print(BAMFiles[1:3])
+setwd("/group/jrigrp4/cn.mops/data")
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
-bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired")
+bamDataRanges <- getReadCountsFromBAM(BAMFiles[1:3], refSeqName=chrs,  mode="paired")
 #Window length set to: 3000
 setwd("/group/jrigrp4/cn.mops/output")
 #resHaplo <- haplocn.mops(bamDataRanges)
