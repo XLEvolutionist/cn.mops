@@ -60,7 +60,7 @@ eval $cmd
 
 echo &quot;End Job: &quot;
 date</code></pre>
-<p>Follwoing this I modified a script the Jinliang gave me. This script reads in the bam files, assess coverage and outputs <code>.bed</code> style output for CNVs and PAVs. The script is saved as <code>scripts/cnv_cnmpos.R</code>.</p>
+<p>Follwoing this I modified a script the Jinliang gave me. This script reads in the bam files, assess coverage and outputs <code>.bed</code> style output for CNVs and PAVs. The script is saved as <code>scripts/cnv_cnmpos.R</code>. At first I limited the analysis to the first 3 <code>.bam</code> files in the list. This is done by modifying the bam files list like this <code>BAMFiles[1:3]</code>.</p>
 <pre><code># Simon Renny-Byfield
 # 16/12/2014
 # do a CNV call for 20 teosine lines from Palmar Chico
@@ -112,7 +112,6 @@ eval $cmd
 
 echo &quot;Job Ending: &quot;
 date</code></pre>
-<p>Now i’n going to see if this change takes place..</p>
 
 
 

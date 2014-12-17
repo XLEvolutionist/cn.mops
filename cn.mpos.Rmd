@@ -40,8 +40,7 @@ eval $cmd
 echo "End Job: "
 date
 ```
-
-Follwoing this I modified a script the Jinliang gave me. This script reads in the bam files, assess coverage and outputs `.bed` style output for CNVs and PAVs. The script is saved as `scripts/cnv_cnmpos.R`.
+Follwoing this I modified a script the Jinliang gave me. This script reads in the bam files, assess coverage and outputs `.bed` style output for CNVs and PAVs. The script is saved as `scripts/cnv_cnmpos.R`. At first I limited the analysis to the first 3 `.bam` files in the list. This is done by modifying the bam files list like this `BAMFiles[1:3]`.
 ```
 # Simon Renny-Byfield
 # 16/12/2014
@@ -75,7 +74,6 @@ cnvdf <- cbind(cnvdf, callcnv)
 
 save(file="bamDataRanges.RData", list=c("bamDataRanges","cnvdf") )
 ```
-
 Importantly this must be run from insde a slurm script. I used the following to get the job done:
 ```
 #!/bin/bash
@@ -84,7 +82,7 @@ Importantly this must be run from insde a slurm script. I used the following to 
 #SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
 #SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
 #SBATCH -J cn.mops
-#SBATCH --mem=12000
+#SBATCH --mem=24000
 
 export R_LIBS="~/R/x86_64-pc-linux-gnu-library/3.1"
 
@@ -99,7 +97,6 @@ echo "Job Ending: "
 date
 ```
 
-Now i'n going to see if this change takes place..
 
 
 

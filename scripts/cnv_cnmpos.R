@@ -11,7 +11,7 @@ BAMFiles <- list.files(path="/group/jrigrp4/teosinte-parents/aln", pattern="sort
 print(BAMFiles)
 setwd("~/CNVer/bams")
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
-bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired")
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired",WL=100)
 #Window length set to: 3000
 setwd("/group/jrigrp4/cn.mops/output")
 #resHaplo <- haplocn.mops(bamDataRanges)
