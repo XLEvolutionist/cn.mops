@@ -1,12 +1,15 @@
 #define a function to fileter CNVs
 #only works with apply
 lineByline<-function(x) {
+  #find the name, start ,and end to habd to overlapsAny
   name<-as.character(x[1])
-  start<-as.numeric(x[2])
-  end<-as.numeric(x[3])
-  minoverlap<-(end-start)/2
-  #a FLAEE answer means no overlap
+  s<-as.numeric(x[2])
+  e<-as.numeric(x[3])
+  #calculate 50% of the cnver size
+  minoverlap<-(e-s)/2
+  #return FALSE if there is not sufficient overlap, TRUE if there is
   return(overlapsAny(GRanges(seqnames = name, ranges = IRanges(start = start, end = end)), GRrep , minoverlap=minoverlap ))
+  #return(overlapsAny(GRanges(seqnames = name, ranges = IRanges(start = s, end = e)), GRrep ))
 }#lineByline  
 
 #load in the cn.mops data
@@ -30,5 +33,5 @@ countOverlaps(GRcnvs,GRrep,ignore.strand = TRUE)[1831]
 # what about making a GRanges object line by line over cnvdf and then seeing if the
 # overlap is greater than 50%
 
-screened<-cnvdf[!apply(cnvdf[1:10,],1,function(x) lineByline(x)) ,]  
+screened<-cnvdf[!apply(cnvdf,1,function(x) lineByline(x)) ,]  
   
