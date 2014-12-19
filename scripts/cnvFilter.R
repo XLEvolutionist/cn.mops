@@ -61,8 +61,8 @@ for ( i in unique(frequency)) {
   # find the index of cnvs with frequency i
   index<-which(frequency == i)
   # trim the table
-  out<-cnvcp[index,]
+  out<-screened[index,]
   # write out the table
-  write.table(cnvcp[1:3,],file=paste("freq_",i,".bed"), qoute=FALSE)
+  write.table(out[1:3,],file=paste("freq_",i,".bed"), qoute=FALSE)
 }#for
   
