@@ -5,7 +5,7 @@
 
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("cn.mops")
-
+len<-100
 library(cn.mops)
 BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$")
 print(BAMFiles[1:3])
@@ -14,7 +14,7 @@ chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
 
 bamDataRanges <- getReadCountsFromBAM(BAMFiles[1:3], refSeqName=chrs,  mode="paired")
 
-bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired",WL=100)
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired",WL=len)
 
 setwd("/group/jrigrp4/cn.mops/output")
 #resHaplo <- haplocn.mops(bamDataRanges)
@@ -31,6 +31,6 @@ cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=e
 callcnv <- mcols(mycnv)
 cnvdf <- cbind(cnvdf, callcnv)
 
-save(file="bamDataRanges.RData", list=c("bamDataRanges","cnvdf") )
+save(file=paste("bamDataRanges", len, ".RData", list=c("bamDataRanges","cnvdf") )
 
 
