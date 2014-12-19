@@ -26,13 +26,25 @@ rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/ZeaRefV3.bed")
 dim(cnvdf)
 # now filter the CNV calls for those that are deleted in at least one individual
 cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
+#calculate the the number of individuals that have the CNV
+cnvcp<-sapply(cnvdf, function(x) gsub("CN","",x))
+cnvcp<-matrix(as.numeric(cnvcp), ncol =dim(cnvdf)[2], byrow=FALSE)
+
+
+# this will need to be changed, some individuals have more than two alleles, which makes
+# assessing frequency a little troubling. Maybe wou should only consider those regions
+# with max CN per individuals is 2
+
+#remove cnvs that have high more than a diploid compliment.
+cnvcp<-cnvcp[apply(cnvcp[,-c(1:3)],1,function(x) max(x) < 3),]
+#find the frequency of each cnv
+frequency<-rowSums(cnvcp[,-c(1:3)])
 
 # make a genomic ranges object of the cnvs
-GRcnvs<-GRanges(seqnames = cnvdf$chr, ranges = IRanges(start = cnvdf[,2], end = cnvdf[,3]))
+GRcnvs<-GRanges(seqnames = cnvcp[,1], ranges = IRanges(start = cnvcp[,2], end = cnvcp[,3]))
 GRrep<-GRanges(seqnames=rep.bed$V1, ranges = IRanges(start=rep.bed$V2, end=rep.bed$V3))
 
 hits = overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
-countOverlaps(GRcnvs,GRrep,ignore.strand = TRUE)[1831]
 
 # We may need a really funcky apply or for loop to get the minimum overlap correct.
 # what about making a GRanges object line by line over cnvdf and then seeing if the
