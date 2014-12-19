@@ -8,18 +8,15 @@
 len<-100
 library(cn.mops)
 BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$")
-print(BAMFiles[1:3])
 setwd("/group/jrigrp4/cn.mops/data")
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
-
-bamDataRanges <- getReadCountsFromBAM(BAMFiles[1:3], refSeqName=chrs,  mode="paired")
-
+print(BAMFiles)
 bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=chrs,  mode="paired",WL=len)
 
 setwd("/group/jrigrp4/cn.mops/output")
 #resHaplo <- haplocn.mops(bamDataRanges)
 #resCN <- calcIntegerCopyNumbers(resHaplo)
-#This function performs the cn.mops algorithm for copy number detection in NGS data
+# This function performs the cn.mops algorithm for copy number detection in NGS data
 res <- cn.mops(bamDataRanges)
 resCNV <- calcIntegerCopyNumbers(res)
 
@@ -32,5 +29,3 @@ callcnv <- mcols(mycnv)
 cnvdf <- cbind(cnvdf, callcnv)
 
 save(file=paste("bamDataRanges", len, ".RData", list=c("bamDataRanges","cnvdf") )
-
-
