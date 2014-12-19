@@ -4,7 +4,7 @@
 #SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
 #SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
 #SBATCH -J cn.mops
-#SBATCH --mem=24000
+#SBATCH --mem=64000
 
 export R_LIBS="~/R/x86_64-pc-linux-gnu-library/3.1"
 
