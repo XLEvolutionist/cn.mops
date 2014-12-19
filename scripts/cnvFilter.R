@@ -26,10 +26,10 @@ rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/ZeaRefV3.bed")
 dim(cnvdf)
 # now filter the CNV calls for those that are deleted in at least one individual
 cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
-# calculate the the number of individuals that have the CNV
+# clean up the data a bit
 cnvcp<-sapply(cnvdf, function(x) gsub("CN","",x))
+# make the data numeric
 cnvcp<-matrix(as.numeric(cnvcp), ncol =dim(cnvdf)[2], byrow=FALSE)
-
 
 # this will need to be changed, some individuals have more than two alleles, which makes
 # assessing frequency a little troubling. Maybe wou should only consider those regions
@@ -52,8 +52,8 @@ hits = overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
 # do it the regular way because minoverlap has to a single number, but the required
 # overlap changes with each cnv.
 
-screened<-cnvdf[!apply(cnvcp,1,function(x) lineByline(x)) ,]
-
+screened<-cnvcp[!apply(cnvcp,1,function(x) lineByline(x)) ,]
+frequency<-rowSums(screened[,-c(1:3)])
 # now for each unique frequency, grab the appropriate CNVs
 for ( i in unique(frequency)) {
   print(i)
@@ -61,8 +61,11 @@ for ( i in unique(frequency)) {
   # find the index of cnvs with frequency i
   index<-which(frequency == i)
   # trim the table
-  out<-screened[index,]
+  out<-screened[index,1:3]
+  colnames(out)<-c("chrom","start","end")
+  #format so it doesn't ouput scientific notation
+  out<-format(out,scientific=FALSE)
   # write out the table
-  write.table(out[1:3,],file=paste("freq_",i,".bed"), qoute=FALSE)
+  write.table(out,file=paste("freq_",i,".bed"), quote=FALSE, row.names = FALSE)
 }#for
   
