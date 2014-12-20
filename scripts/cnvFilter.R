@@ -55,17 +55,23 @@ hits = overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
 screened<-cnvcp[!apply(cnvcp,1,function(x) lineByline(x)) ,]
 frequency<-rowSums(screened[,-c(1:3)])
 # now for each unique frequency, grab the appropriate CNVs
-for ( i in unique(frequency)) {
+for ( i in unique(frequency) ) {
   print(i)
-  # eventually output these CNVs as a bed file, one for each level of frequency
+  # eventually output these CNVs as a region file, one for each level of frequency
   # find the index of cnvs with frequency i
   index<-which(frequency == i)
   # trim the table
   out<-screened[index,1:3]
   colnames(out)<-c("chrom","start","end")
-  #format so it doesn't ouput scientific notation
+  # format so it doesn't ouput scientific notation
   out<-format(out,scientific=FALSE)
+  out[,1]<-gsub("\\s+","",out[,1])
+  #out<-apply(out,1,function(x) paste(x[1],":",x[2],"-",x[3]))
+  #out<-apply(out,2,function(x)gsub('\\s+', '',x))
+  #print(head(out))
   # write out the table
-  write.table(out,file=paste("freq_",i,".bed"), quote=FALSE, row.names = FALSE)
+  write.table(out,file=paste("freq_",i,".bed", sep = ""), quote=FALSE, row.names = FALSE)
 }#for
+
+
   
