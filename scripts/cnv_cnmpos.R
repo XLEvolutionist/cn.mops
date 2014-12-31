@@ -33,5 +33,5 @@ for (i in chrs ) {
 	callcnv <- mcols(mycnv)
 	cnvdf <- cbind(cnvdf, callcnv)
 	setwd("/group/jrigrp4/cn.mops/output")
-	save(file=paste("bamDataRanges_", i, ".RData", list=c("bamDataRanges","cnvdf") ) )
+	save(file=paste("bamDataRanges_", i, ".RData") list=c("bamDataRanges","cnvdf") ) 
 }#for
