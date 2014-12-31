@@ -11,9 +11,9 @@ BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$"
 setwd("/group/jrigrp4/cn.mops/data")
 
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
-setwd("/group/jrigrp4/cn.mops/output")
 #for each chromosome
 for (i in chrs ) {
+	setwd("/group/jrigrp4/cn.mops/data")
 	#try just chr 10 for now
 	#chrs<-10
 	#print(BAMFiles)
@@ -32,6 +32,6 @@ for (i in chrs ) {
 	cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
 	callcnv <- mcols(mycnv)
 	cnvdf <- cbind(cnvdf, callcnv)
-
-	save(file=paste("bamDataRanges_", i, ".RData", list=c("bamDataRanges","cnvdf") )
+	setwd("/group/jrigrp4/cn.mops/output")
+	save(file=paste("bamDataRanges_", i, ".RData", list=c("bamDataRanges","cnvdf") ) )
 }#for
