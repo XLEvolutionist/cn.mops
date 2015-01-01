@@ -1,0 +1,12 @@
+---
+title: "Testing *cn.mops* using TIL01 as reference"
+author: "Simon Renny-Byfield"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+Jeff mentioned that I should examine the cnv calls of [cn.ops](http://www.bioinf.jku.at/software/cnmops/) using TIL01 and TIL11 which already have cnvs called using a chip in a [Swanson-Wagner](http://www.ncbi.nlm.nih.gov/pubmed/21036921) paper. The issue I can foresee is that the analysis was done with the maize refercne version 2, whereas we re working with maize ref3... Perhaps this means having to convert co-ordinates, or revert back to maize 2 to assess the hit rate of cn.mops.
