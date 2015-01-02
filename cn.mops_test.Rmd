@@ -34,10 +34,66 @@ Following this the data are mapped using BWA-MEM and a batch script:
 echo "Starting bwa job: "
 date
 
-cmd="bwa mem -M -t 10 -v 1 -p /group/jrigrp4/teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq | samtools view -Sb - > TIL01.bam"
+cmd="bwa mem -M -t 10 -v 1 /group/jrigrp4/teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq | samtools view -Sb - > TIL01.bam"
 echo $cmd
 eval $cmd
 
 echo "Job Ending: "
 date
 ```
+
+The mapping bhas been done and I attempted to run the cn.mpos with this script:
+```
+# Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("cn.mops")
+len<-100
+library(cn.mops)
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/TIL_data", pattern=".bam$")
+setwd("/group/jrigrp4/cn.mops/TIL_data")
+
+chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+#for each chromosome
+for (i in chrs ) {
+        #setwd("/group/jrigrp4/cn.mops/data")
+        #try just chr 10 for now
+        #chrs<-10
+        #print(BAMFiles)
+        bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
+
+        #resHaplo <- haplocn.mops(bamDataRanges)
+        #resCN <- calcIntegerCopyNumbers(resHaplo)
+        # This function performs the cn.mops algorithm for copy number detection in NGS data
+        res <- cn.mops(bamDataRanges)
+        resCNV <- calcIntegerCopyNumbers(res)
+
+        ### transform GRanges to data.frame
+        mycnv <- cnvr(resCNV)
+
+
+        cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+        callcnv <- mcols(mycnv)
+        cnvdf <- cbind(cnvdf, callcnv)
+        setwd("/group/jrigrp4/cn.mops/TIL_data")
+        save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf") )
+}#for
+```
+but there are a few error, as follows:
+```
+Reading file: TIL01.bam
+  1
+
+
+Error in cn.mops(bamDataRanges) :
+  It is not possible to run cn.mops on only ONE sample.
+In addition: Warning message:
+In FUN("TIL01.bam"[[1L]], ...) : No reads found in file: TIL01.bam
+You may have to change the mode to "paired" or"unpaired"
+Execution halted
+```
+
+I realised I had added the `-p` flag to the `bwa mem` run resulting in the program thinking the first file was an interleaved fastq file, rather than having pairs in seperate files (which is the case here). So the mapping needs to be done again as above (the `-p` flag is now removed).
