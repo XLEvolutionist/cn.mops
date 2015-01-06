@@ -1,3 +1,4 @@
+
 # Simon Renny-Byfield
 # 16/12/2014
 # do a CNV call for 20 teosine lines from Palmar Chico
@@ -7,7 +8,7 @@
 #biocLite("cn.mops")
 len<-100
 library(cn.mops)
-BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/TIL_data", pattern=".bam$")
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/TIL_data", pattern="sorted.bam$")
 setwd("/group/jrigrp4/cn.mops/TIL_data")
 
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
