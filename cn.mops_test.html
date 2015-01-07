@@ -10,7 +10,7 @@
 
 <meta name="author" content="Simon Renny-Byfield" />
 
-<meta name="date" content="2015-01-01" />
+<meta name="date" content="2015-01-07" />
 
 <title>Testing cn.mops using TIL01 as reference</title>
 
@@ -28,7 +28,7 @@
 <div id="header">
 <h1 class="title">Testing <em>cn.mops</em> using TIL01 as reference</h1>
 <h4 class="author"><em>Simon Renny-Byfield</em></h4>
-<h4 class="date"><em>2015-01-01</em></h4>
+<h4 class="date"><em>2015-01-07</em></h4>
 </div>
 
 
@@ -52,12 +52,87 @@
 echo &quot;Starting bwa job: &quot;
 date
 
-cmd=&quot;bwa mem -M -t 10 -v 1 -p /group/jrigrp4/teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq | samtools view -Sb - &gt; TIL01.bam&quot;
+cmd=&quot;bwa mem -M -t 10 -v 1 /group/jrigrp4/teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq | samtools view -Sb - &gt; TIL01.bam&quot;
 echo $cmd
 eval $cmd
 
 echo &quot;Job Ending: &quot;
 date</code></pre>
+<p>The mapping bhas been done and I attempted to run the cn.mpos with this script:</p>
+<pre><code># Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source(&quot;http://bioconductor.org/biocLite.R&quot;)
+#biocLite(&quot;cn.mops&quot;)
+len&lt;-100
+library(cn.mops)
+BAMFiles &lt;- list.files(path=&quot;/group/jrigrp4/cn.mops/TIL_data&quot;, pattern=&quot;.bam$&quot;)
+setwd(&quot;/group/jrigrp4/cn.mops/TIL_data&quot;)
+
+chrs &lt;- c(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;)
+#for each chromosome
+for (i in chrs ) {
+        #setwd(&quot;/group/jrigrp4/cn.mops/data&quot;)
+        #try just chr 10 for now
+        #chrs&lt;-10
+        #print(BAMFiles)
+        bamDataRanges &lt;- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode=&quot;paired&quot;,WL=len)
+
+        #resHaplo &lt;- haplocn.mops(bamDataRanges)
+        #resCN &lt;- calcIntegerCopyNumbers(resHaplo)
+        # This function performs the cn.mops algorithm for copy number detection in NGS data
+        res &lt;- cn.mops(bamDataRanges)
+        resCNV &lt;- calcIntegerCopyNumbers(res)
+
+        ### transform GRanges to data.frame
+        mycnv &lt;- cnvr(resCNV)
+
+
+        cnvdf &lt;- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+        callcnv &lt;- mcols(mycnv)
+        cnvdf &lt;- cbind(cnvdf, callcnv)
+        setwd(&quot;/group/jrigrp4/cn.mops/TIL_data&quot;)
+        save(file=paste0(&quot;bamDataRanges_&quot;, i, &quot;.RData&quot;), list=c(&quot;bamDataRanges&quot;,&quot;cnvdf&quot;) )
+}#for</code></pre>
+<p>but there are a few error, as follows:</p>
+<pre><code>Reading file: TIL01.bam
+  1
+
+
+Error in cn.mops(bamDataRanges) :
+  It is not possible to run cn.mops on only ONE sample.
+In addition: Warning message:
+In FUN(&quot;TIL01.bam&quot;[[1L]], ...) : No reads found in file: TIL01.bam
+You may have to change the mode to &quot;paired&quot; or&quot;unpaired&quot;
+Execution halted</code></pre>
+<p>I realised I had added the <code>-p</code> flag to the <code>bwa mem</code> run resulting in the program thinking the first file was an interleaved fastq file, rather than having pairs in seperate files (which is the case here). So the mapping needs to be done again as above (the <code>-p</code> flag is now removed).</p>
+<p>Also, the resulting <code>.bam</code> files did not have a header region, possibly the resulting in the error above. I have changed the pipe to samtools (from bwa mem) to:</p>
+<pre><code>#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/TIL_data
+#SBATCH -o /group/jrigrp4/cn.mops/logs/bwa_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/bwa_err_log-%j.txt
+#SBATCH -J bwa
+#SBATCH --mem=10000
+#SBATCH --cpus-per-task 10
+
+
+echo &quot;Starting bwa job: &quot;
+date
+
+cmd=&quot;bwa mem -M -t 10 -v 1 Zmays_284_AGPv3.hardmasked_shortName.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq  | samtools view -bSh  - &gt; $
+echo $cmd
+eval $cmd
+cmd=&quot;samtools sort TIL01.bam TIL01_sorted&quot;
+echo $cmd
+eval $cmd
+
+echo &quot;Job Ending: &quot;
+date</code></pre>
+<p>This now includes the <code>-h</code> flag which instructs samtools to keep the header region whilst printing out the <code>.bam</code> file.</p>
+<p>I’m now re-running the mapping with the hope that this will resolve the problem. Additionally, I have run the samples as <code>unpaired</code> in the <code>cn.mops</code> call because I only have partial data for TIL11 (which isn’t in the Swanson-Wagner paper anyways).</p>
 </div>
 
 

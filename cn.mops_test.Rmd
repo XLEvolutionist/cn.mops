@@ -97,3 +97,32 @@ Execution halted
 ```
 
 I realised I had added the `-p` flag to the `bwa mem` run resulting in the program thinking the first file was an interleaved fastq file, rather than having pairs in seperate files (which is the case here). So the mapping needs to be done again as above (the `-p` flag is now removed).
+
+Also, the resulting `.bam` files did not have a header region, possibly the resulting in the error above. I have changed the pipe to samtools (from bwa mem) to:
+```
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/TIL_data
+#SBATCH -o /group/jrigrp4/cn.mops/logs/bwa_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/bwa_err_log-%j.txt
+#SBATCH -J bwa
+#SBATCH --mem=10000
+#SBATCH --cpus-per-task 10
+
+
+echo "Starting bwa job: "
+date
+
+cmd="bwa mem -M -t 10 -v 1 Zmays_284_AGPv3.hardmasked_shortName.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq  | samtools view -bSh  - > $
+echo $cmd
+eval $cmd
+cmd="samtools sort TIL01.bam TIL01_sorted"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```
+This now includes the `-h` flag which instructs samtools to keep the header region whilst printing out the `.bam` file.
+
+I'm now re-running the mapping with the hope that this will resolve the problem. Additionally, I have run the samples as `unpaired` in the `cn.mops` call because I only have partial data for TIL11 (which isn't in the Swanson-Wagner paper anyways).
