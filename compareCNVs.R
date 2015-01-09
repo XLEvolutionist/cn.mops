@@ -23,9 +23,6 @@ library(devtools)
 library(GenomicRanges)
 library("rtracklayer")
 library(GenomicFeatures)
-#install_github('TxDb.Zmays.Ensembl.AGPv2.17', 'vsbuffalo')
-#library(TxDb.Zmays.Ensembl.AGPv2.17)
-#txdb<-TxDb.Zmays.Ensembl.AGPv2.17
 
 #firstly read in a gff of all the genes from RefV3.
 gffRangedData<-import.gff("/Users/srbyfield/GitHub/cn.mops/geneRefV3.gff3")
@@ -34,11 +31,10 @@ genesGRanges<-as(gffRangedData, "GRanges")
 # use gffRangedData$group to access the genes via name
 
 #load in the swanson-wagner data
-SWcnvs<-read.table("/Users/srbyfield/GitHub/cn.mops/sw_tables.txt", header = TRUE,
-                   fileEncoding="UTF-16LE",sep = "\t")
-# now filter the gene set to those genes with known PAVs/CNVs
+SWcnvs<-read.table("/Users/srbyfield/GitHub/cn.mops/sw_tables.txt", header = TRUE,sep = "\t")
+
+# now filter the gene set to those genes with known PAVs/CNVs (i.e. SW genes)
+SWgeneGRanges<-genesGRanges[gffRangedData$group %in% SWcnvs$GeneID]
+
 # Note: Within the genotype columns a value of 1 indicates UpCNV while -1 indicates 
 # DownCNV/PAV and 0 connotes no change.  
-
-
-#load in the 

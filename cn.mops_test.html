@@ -10,7 +10,7 @@
 
 <meta name="author" content="Simon Renny-Byfield" />
 
-<meta name="date" content="2015-01-07" />
+<meta name="date" content="2015-01-09" />
 
 <title>Testing cn.mops using TIL01 as reference</title>
 
@@ -28,7 +28,7 @@
 <div id="header">
 <h1 class="title">Testing <em>cn.mops</em> using TIL01 as reference</h1>
 <h4 class="author"><em>Simon Renny-Byfield</em></h4>
-<h4 class="date"><em>2015-01-07</em></h4>
+<h4 class="date"><em>2015-01-09</em></h4>
 </div>
 
 
@@ -133,6 +133,53 @@ echo &quot;Job Ending: &quot;
 date</code></pre>
 <p>This now includes the <code>-h</code> flag which instructs samtools to keep the header region whilst printing out the <code>.bam</code> file.</p>
 <p>I’m now re-running the mapping with the hope that this will resolve the problem. Additionally, I have run the samples as <code>unpaired</code> in the <code>cn.mops</code> call because I only have partial data for TIL11 (which isn’t in the Swanson-Wagner paper anyways).</p>
+<p>The mapping worked and I ran cn.mops on the TIL01 and TIL11 samples using:</p>
+<pre><code># Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source(&quot;http://bioconductor.org/biocLite.R&quot;)
+#biocLite(&quot;cn.mops&quot;)
+len&lt;-100
+library(cn.mops)
+BAMFiles &lt;- list.files(path=&quot;/group/jrigrp4/cn.mops/TIL_data&quot;, pattern=&quot;sorted.bam$&quot;)
+setwd(&quot;/group/jrigrp4/cn.mops/TIL_data&quot;)
+
+chrs &lt;- c(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;)
+#for each chromosome
+for (i in chrs ) {
+        #setwd(&quot;/group/jrigrp4/cn.mops/data&quot;)
+        #try just chr 10 for now
+        #chrs&lt;-10
+        #print(BAMFiles)
+        bamDataRanges &lt;- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode=&quot;unpaired&quot;,WL=len)
+        print(&quot;here&quot;)
+        #resHaplo &lt;- haplocn.mops(bamDataRanges)
+        #resCN &lt;- calcIntegerCopyNumbers(resHaplo)
+        # This function performs the cn.mops algorithm for copy number detection in NGS data
+        res &lt;- cn.mops(bamDataRanges)
+        resCNV &lt;- calcIntegerCopyNumbers(res)
+
+        ### transform GRanges to data.frame
+        mycnv &lt;- cnvr(resCNV)
+
+
+        cnvdf &lt;- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+        callcnv &lt;- mcols(mycnv)
+        cnvdf &lt;- cbind(cnvdf, callcnv)
+        setwd(&quot;/group/jrigrp4/cn.mops/TIL_data&quot;)
+        save(file=paste0(&quot;bamDataRanges_&quot;, i, &quot;.RData&quot;), list=c(&quot;bamDataRanges&quot;,&quot;cnvdf&quot;) )
+}#for</code></pre>
+<p>However, looking at the data it seems to me that it isn’t quite right. TIL11 (the one with only 15 GB on sequence data) seems to be much more variable than TIL01. Additionally there are nearly 200,000 CNV calls, this seems excessively high IMHO.</p>
+</div>
+<div id="alternative-appraoch-include-til01-with-palmar-chico-samples" class="section level2">
+<h2>Alternative appraoch: include TIL01 with Palmar Chico samples</h2>
+<p>I think it might be better to run the TIL01 sample with the Palmar Chico samples. I think this is better because <code>cn.mops</code> works well with many samples, and running only two is not producing very good results.</p>
+<p>I will re-map the TIL01 data set using <code>BWA MEM</code> in paired-end mode then add the resulting .bam file to the correct folder and run the cn.mops analysis with 21 samples (20 Palmar Chico and TIL01). I use the following command to map the reads: ``` #!/bin/bash #OUTDIR=/group/jrigrp4/cn.mops/output #SBATCH -D /group/jrigrp4/cn.mops/TIL_data #SBATCH -o /group/jrigrp4/cn.mops/logs/bwa_out_log-%j.txt #SBATCH -e /group/jrigrp4/cn.mops/logs/bwa_err_log-%j.txt #SBATCH -J bwa #SBATCH –mem=10000 #SBATCH –cpus-per-task 10</p>
+<p>echo “Starting bwa job:” date</p>
+<p>cmd=“bwa mem -M -t 10 -v 1 Zmays_284_AGPv3.hardmasked_shortName.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq | samtools view -bSh - &gt; TIL01.bam” echo $cmd eval $cmd cmd=“samtools sort TIL01.bam TIL01_sorted” echo $cmd eval $cmd cmd=“samtools index TIL01_sorted.bam” echo $cmd eval $cmd</p>
+<p>echo “Job Ending:” date</p>
 </div>
 
 
