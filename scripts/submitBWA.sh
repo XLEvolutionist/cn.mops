@@ -11,10 +11,13 @@
 echo "Starting bwa job: "
 date
 
-cmd="bwa mem -M -t 10 -v 1 /group/jrigrp4/teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa <(zcat TIL11_3511_3807_3511_N_TIP534_3_R1.fastq.gz)  | samtools view -bS - > TIL11.bam"
+cmd="bwa mem -M -t 10 -v 1 /home/vince251/data/refgen3-hapmap/maize3.fa.gz TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq  | samtools view -bSh  - > TIL01.bam"
 echo $cmd
 eval $cmd
-cmd="samtools sort TIL11.bam TIL11_sorted"
+cmd="samtools sort TIL01.bam TIL01_sorted"
+echo $cmd
+eval $cmd
+cmd="samtools index TIL01_sorted.bam"
 echo $cmd
 eval $cmd
 

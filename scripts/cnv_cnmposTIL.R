@@ -18,8 +18,8 @@ for (i in chrs ) {
 	#try just chr 10 for now
 	#chrs<-10
 	#print(BAMFiles)
-	bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
-
+	bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="unpaired",WL=len)
+	print("here")
 	#resHaplo <- haplocn.mops(bamDataRanges)
 	#resCN <- calcIntegerCopyNumbers(resHaplo)
 	# This function performs the cn.mops algorithm for copy number detection in NGS data
