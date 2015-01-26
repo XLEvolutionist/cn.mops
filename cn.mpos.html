@@ -10,7 +10,7 @@
 
 <meta name="author" content="Simon Renny-Byfield" />
 
-<meta name="date" content="2014-12-16" />
+<meta name="date" content="2015-01-26" />
 
 <title>Running cn.mops on 20 teosinte from Palmar Chico</title>
 
@@ -28,7 +28,7 @@
 <div id="header">
 <h1 class="title">Running cn.mops on 20 teosinte from Palmar Chico</h1>
 <h4 class="author"><em>Simon Renny-Byfield</em></h4>
-<h4 class="date"><em>2014-12-16</em></h4>
+<h4 class="date"><em>2015-01-26</em></h4>
 </div>
 
 
@@ -99,7 +99,7 @@ save(file=&quot;bamDataRanges.RData&quot;, list=c(&quot;bamDataRanges&quot;,&quo
 #SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
 #SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
 #SBATCH -J cn.mops
-#SBATCH --mem=12000
+#SBATCH --mem=24000
 
 export R_LIBS=&quot;~/R/x86_64-pc-linux-gnu-library/3.1&quot;
 
@@ -112,6 +112,7 @@ eval $cmd
 
 echo &quot;Job Ending: &quot;
 date</code></pre>
+<p>The data are now availalbe and have been moved to my desktop in <code>/Users/simonrenny-byfield/CNV_PAV</code>. Calls from each chromosome were combined into a single file called <code>cnv_calls.RData</code>.</p>
 
 
 

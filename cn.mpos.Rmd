@@ -97,6 +97,8 @@ echo "Job Ending: "
 date
 ```
 
+The data are now availalbe and have been moved to my desktop in `/Users/simonrenny-byfield/CNV_PAV`. Calls from each chromosome were combined into a single file called `cnv_calls.RData`.
+
 
 
 

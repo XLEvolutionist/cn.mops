@@ -1,10 +1,12 @@
 # Simon Renny-Byfield, University of California, Davis
 # 17th Dec `14
 
+# Takes cn.mops output and filters removing CNVs estimated over repeat regions.
+
 library(dplyr)
 library(GenomicRanges)
 
-# define a function to fileter CNVs
+# define a function to filter CNVs
 # only works with apply
 # Define a useful function(s)
 lineByline<-function(x) {
@@ -19,8 +21,10 @@ lineByline<-function(x) {
   # return(overlapsAny(GRanges(seqnames = name, ranges = IRanges(start = s, end = e)), GRrep ))
 }# lineByline  
 
+#set the wd
+setwd("/Users/simonrenny-byfield/CNV_PAV")
 # load in the cn.mops data
-load("/Users/simonrenny-byfield/bamDataRanges100.RData")
+load("cnv_calls.RData")
 # load in the Zea repeats bed file
 rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/ZeaRefV3.bed")
 dim(cnvdf)
@@ -44,7 +48,7 @@ frequency<-rowSums(cnvcp[,-c(1:3)])
 GRcnvs<-GRanges(seqnames = cnvcp[,1], ranges = IRanges(start = cnvcp[,2], end = cnvcp[,3]))
 GRrep<-GRanges(seqnames=rep.bed$V1, ranges = IRanges(start=rep.bed$V2, end=rep.bed$V3))
 
-hits = overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
+hits <- overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
 
 # We may need a really funcky apply or for loop to get the minimum overlap correct.
 # what about making a GRanges object line by line over cnvdf and then seeing if the
