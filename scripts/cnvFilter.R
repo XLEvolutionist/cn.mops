@@ -26,17 +26,19 @@ setwd("/Users/simonrenny-byfield/CNV_PAV")
 # load in the cn.mops data
 load("input_RData/cnv_calls.RData")
 # load in the Zea repeats bed file
-rep.bed<-read.table("bed_files/RepeatZeaRefV3.bed")
-gene.bed<-read.table("bed_files/GeneZeaRefV3.bed")
-save(file="input_RData/beds.RData", list=c(rep.bed,gene.bed))
+load("input_RData/beds.RData")
 dim(cnvdf)
 
 # now filter the CNV calls for those that are deleted in at least one individual
 # I don't think this is neccesary, what if all the lines have upCNVs.
 # cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
 
+#remove TIL01 from the Palmar Chico population
+cnvdf<-cnvdf[,-24]
+
 # clean up the data a bit
 cnvcp<-sapply(cnvdf, function(x) gsub("CN","",x))
+
 # make the data numeric
 cnvcp<-matrix(as.numeric(cnvcp), ncol =dim(cnvdf)[2], byrow=FALSE)
 
@@ -81,7 +83,7 @@ for ( i in unique(frequency) ) {
   #out<-apply(out,2,function(x)gsub('\\s+', '',x))
   #print(head(out))
   # write out the table
-  write.table(out,file=paste("freq_",i,".bed", sep = ""), quote=FALSE, row.names = FALSE)
+  write.table(out,file=paste("bed_files/freq_",i,".bed", sep = ""), quote=FALSE, row.names = FALSE)
 }#for
 
 
