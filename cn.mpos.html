@@ -10,7 +10,7 @@
 
 <meta name="author" content="Simon Renny-Byfield" />
 
-<meta name="date" content="2015-01-26" />
+<meta name="date" content="2015-01-27" />
 
 <title>Running cn.mops on 20 teosinte from Palmar Chico</title>
 
@@ -28,7 +28,7 @@
 <div id="header">
 <h1 class="title">Running cn.mops on 20 teosinte from Palmar Chico</h1>
 <h4 class="author"><em>Simon Renny-Byfield</em></h4>
-<h4 class="date"><em>2015-01-26</em></h4>
+<h4 class="date"><em>2015-01-27</em></h4>
 </div>
 
 
@@ -113,6 +113,16 @@ eval $cmd
 echo &quot;Job Ending: &quot;
 date</code></pre>
 <p>The data are now availalbe and have been moved to my desktop in <code>/Users/simonrenny-byfield/CNV_PAV</code>. Calls from each chromosome were combined into a single file called <code>cnv_calls.RData</code>.</p>
+<div id="testing-cnv-calls-using-swanson-wagner-data-and-til01" class="section level2">
+<h2>Testing CNV calls using Swanson-Wagner data and TIL01</h2>
+<p>Data from SW genome research <a href="http://genome.cshlp.org/content/20/12/1689.long#T3">paper</a> is stored in <code>/Users/simonrenny-byfield/CNV_PAV/SW_data/SW_cnv_calls.csv</code>. The next step is to use this data to test our own CNV calls on TIL01. It is important to realize that some of the gene names have changed from RefV1 to RefV3.</p>
+<p>Now we need the gene annotations to see which CNVs overlap with the genes. I can see two ways to do this:</p>
+<ol style="list-style-type: decimal">
+<li>Use the untrimmed data set, that is without regard to CNVs overlapping repeats.</li>
+<li>USe the final trimmmed dataset which we will finally use in the SFS and selection analysis.</li>
+</ol>
+<p>I think option 2 is probably the best so I will use the <em>final</em> set of CNVs.</p>
+</div>
 
 
 

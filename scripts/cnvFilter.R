@@ -24,12 +24,17 @@ lineByline<-function(x) {
 #set the wd
 setwd("/Users/simonrenny-byfield/CNV_PAV")
 # load in the cn.mops data
-load("cnv_calls.RData")
+load("input_RData/cnv_calls.RData")
 # load in the Zea repeats bed file
-rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/ZeaRefV3.bed")
+rep.bed<-read.table("bed_files/RepeatZeaRefV3.bed")
+gene.bed<-read.table("bed_files/GeneZeaRefV3.bed")
+save(file="input_RData/beds.RData", list=c(rep.bed,gene.bed))
 dim(cnvdf)
+
 # now filter the CNV calls for those that are deleted in at least one individual
-cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
+# I don't think this is neccesary, what if all the lines have upCNVs.
+# cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
+
 # clean up the data a bit
 cnvcp<-sapply(cnvdf, function(x) gsub("CN","",x))
 # make the data numeric
@@ -39,8 +44,8 @@ cnvcp<-matrix(as.numeric(cnvcp), ncol =dim(cnvdf)[2], byrow=FALSE)
 # assessing frequency a little troubling. Maybe wou should only consider those regions
 # with max CN per individuals is 2
 
-# remove cnvs that have high more than a diploid compliment.
-cnvcp<-cnvcp[apply(cnvcp[,-c(1:3)],1,function(x) max(x) < 3),]
+## remove cnvs that have high more than a diploid compliment.
+#cnvcp<-cnvcp[apply(cnvcp[,-c(1:3)],1,function(x) max(x) < 3),]
 # find the frequency of each cnv
 frequency<-rowSums(cnvcp[,-c(1:3)])
 
@@ -59,6 +64,7 @@ hits <- overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
 screened<-cnvcp[!apply(cnvcp,1,function(x) lineByline(x)) ,]
 colnames(screened)<-colnames(cnvdf)
 frequency<-rowSums(screened[,-c(1:3)])
+save(file="output/screened_cnvs.RData", list=c(screened,frequency))
 # now for each unique frequency, grab the appropriate CNVs
 for ( i in unique(frequency) ) {
   print(i)
