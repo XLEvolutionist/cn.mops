@@ -99,11 +99,7 @@ dim(swAll)
 # How many of the "normal" Swanson-Wagner genes are called as CNVs in cn.mops runs
 falseCalls<-length(intersect(names(hits),as.character(swNeg[,1])))
 falsePosRate<-falseCalls/dim(swNeg)[1]
-
 # so a reasonably low false positive rate of ~11%.
-
-
-
 
 ####
 # Output the co-ordinates of the Swanson-Wagner CNVs
@@ -113,7 +109,4 @@ SWgenes<-GRgenes[names(GRgenes) %in% as.factor(sw[,1]), ]
 
 #output the Granges object as a bed file
 export.gff(SWgenes, con="SWgenes.gff", version ="3")
-
-#now these will be used to examine coverage over these regions in TIL01
-SWgenes
 
