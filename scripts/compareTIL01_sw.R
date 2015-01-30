@@ -1,8 +1,8 @@
 # A brief scrip to compare CNV calls from Swanson-Wagner, 
-# with CNVs called from cn.mops.
+# with CNVs called from the cn.mops algorithm.
 # Simon Renny-Byfield, UC Davis, Jan 2015
 
-#load in the R modules 
+# load in the R modules 
 library(dplyr)
 library(GenomicRanges)
 library(rtracklayer)
@@ -24,19 +24,6 @@ load("input_RData/beds.RData")
 # now load in the cnv calls
 load("input_RData/cnv_calls.RData")
 
-####
-# Extract the useful data
-####
-
-#extract the TIL01 calls
-TIL01<-cnvdf[,c(1,2,3,24)]
-# get rid of the annoying "CN" stuff
-# clean up the data a bit
-TIL01<-sapply(TIL01, function(x) gsub("CN","",x))
-# make the data numeric
-TIL01<-matrix(as.numeric(TIL01), ncol =dim(TIL01)[2], byrow=FALSE)
-# now remove those sites which are not variable in TIL01
-TIL01<-subset(TIL01,TIL01[,4] != 2)
 # now load in the SW CNV data
 sw<-read.csv("SW_data/SW_cnv_calls.csv")
 swAll<-sw
@@ -45,68 +32,94 @@ sw<-sw[,c(1,4,34)]
 #produce a list of genes with no evidence for CNVs in TIL01
 swNeg<-subset(sw,sw$TIL1 == 0 )
 
-# remove rows that have no CNVs in TIL01, i.e. rows with 0.
-sw<-subset(sw, sw$TIL1 != 0)
-# try overlap between any of these called CNVs, as opposed to just TIL01
-# how many CNVs are called in TIL01
-dim(sw)
-
 ####
-# Now find cn.mops CNVs that overlap genes
+# Extract the useful data
 ####
 
-# make a genomic ranges object of the cnvs, genes and repeats
-TIL01cnvs<-GRanges(seqnames = TIL01[,1], ranges = IRanges(start = TIL01[,2], end = TIL01[,3]))
+#modify the cn.mops data to look like the sw data
+cnvdf<-sapply(cnvdf, function(x) as.numeric(gsub("CN","",x)))
+# create a modify a temp df
+tempdf<-cnvdf[,-c(1:3)]
+tempdf[tempdf<2] <--1
+tempdf[tempdf>2] <-1
+tempdf[tempdf==2] <-0
+# attribute this back to cnvdf
+cnvdf[,-c(1:3)]<-tempdf
+
+###
+# Set up the some GRanges objects 
+###
+
+# create a GRanges object from the data frame
+cn.mopsRanges<-makeGRangesFromDataFrame(data.frame(cnvdf), keep.extra.columns = TRUE)
+# create a Granges object from the repeat data
 GRrep<-GRanges(seqnames=rep.bed$V1, ranges = IRanges(start=rep.bed$V2, end=rep.bed$V3))
+# dito for the gene annotationns
 GRgenes<-GRanges(seqnames=gene.bed$V1, ranges = IRanges(start=gene.bed$V2, end=gene.bed$V3, names = gene.bed$V4))
 
-
-# overlaps between genes and cnvs, return GRanges object for only those genes that overlap
-hits<-subsetByOverlaps(GRgenes,TIL01cnvs,ignore.strand = TRUE, minoverlap=1, type="any")
-
-# what about overlap with SW CNV calls and cn.mops cnv calls?
-dualCalls<-intersect(names(hits),as.character(sw[,1]))
-# The overlap is not very good... at all. We don't spot many of SW calls in our cn.mops calls... :(
-length(dualCalls)
-
-#how many gene annotations (without respecxt to CNVs) can we find in sw? All hopefully.
-#intersect(names(GRgenes),as.character(sw[,1]))
-length(intersect(names(GRgenes),as.character(sw[,1])))
-####
-# Now compare all vs all comparisons with Swanson-Wagner call vs all cn.mops calls
-####
-
-#all the cnvs, regardless of accession
-cn.mopsCNVs<-GRanges(seqnames = cnvdf[,1], ranges = IRanges(start = cnvdf[,2], end = cnvdf[,3]))
-
-hits<-subsetByOverlaps(GRgenes,TIL01cnvs,ignore.strand = TRUE, minoverlap=1, type="any")
-dualCalls<-intersect(names(hits),as.character(sw[,1]))
-length(dualCalls)
-
-# overlaps between genes and cnvs, return GRanges object for only those genes that overlap
-hitsAllvAll<-subsetByOverlaps(GRgenes,cn.mopsCNVs,ignore.strand = TRUE, minoverlap=1, type="any")
-
-# what about overlap with SW CNV calls and cn.mops cnv calls?
-dualCallsAllvAll<-intersect(as.character(hitsAllvAll$factor),as.character(swAll[,1]))
-# The overlap is not very good... at all. We don't spot many of SW calls in our cn.mops calls... :(
-length(dualCallsAllvAll)
-dim(swAll)
-
 ###
-# Now check the false positive rate
+# now annnotate CNVs with genes they overlap
 ###
 
-# How many of the "normal" Swanson-Wagner genes are called as CNVs in cn.mops runs
-falseCalls<-length(intersect(names(hits),as.character(swNeg[,1])))
-falsePosRate<-falseCalls/dim(swNeg)[1]
-# so a reasonably low false positive rate of ~11%.
+#find the CNV calls from cn.mops that iverlap gene annotations
+CNgenes<-subsetByOverlaps(cn.mopsRanges,GRgenes,ignore.strand = TRUE, minoverlap=1, type="any")
 
-####
-# Output the co-ordinates of the Swanson-Wagner CNVs
-####
+# now find the SW gene names in GRgenes and extract those from the object
+swAll<- swAll[!duplicated(swAll[,1]),]
+#grab the Swanson-Wagner CNV genes from the GRgenes object, by name
+SWgenes<-GRgenes[names(GRgenes) %in% swAll[,1] ]
 
-SWgenes<-GRgenes[names(GRgenes) %in% as.factor(sw[,1]), ]
+# now grab the appropriate CNV calls from the swAll df
+swTrim<-swAll[swAll[,1] %in% names(SWgenes),c(1,34)]
 
-#output the Granges object as a bed file
-export.gff(SWgenes, con="SWgenes.gff", version ="3")
+# add a metadata column of the sw CNV calls for TIL01
+values(SWgenes)<-swTrim[,2]
+
+######
+# Calculate overlaps between CNgenes (i.e. genes with cn.mops calls)
+# and SWgenes (i.e. genes that have Swanson-Wagner calls)
+######
+
+# now figure out the total overlap between cnv calls in TIL01 and all of the 
+# calls in sw, regardless of whether it is in TIL01 or not.
+totalOverlap<-subsetByOverlaps(SWgenes,CNgenes,ignore.strand = TRUE, minoverlap=1, type="any")
+
+# grab the sw genes with CNV calls in TIL01
+swTIL<-SWgenes[SWgenes$value != 0]
+# grab the cn.mops genes with calls in TIL01
+cnTIL<-CNgenes[CNgenes$TIL01_sorted.bam !=0]
+
+# now how many overlap with the cn.mops CNV calls?
+TILvsTIL<-subsetByOverlaps(swTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any")
+# so only 125/830 or ~15.1% recall between the chip and the cn.mops method.
+
+# but do the calls agree???
+idx.compare<-as.matrix(findOverlaps(swTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
+upDown.df<-cbind("sw"=swTIL$value[idx.compare[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[idx.compare[,2]])
+
+length(upDown.df[,1][upDown.df[,1] == upDown.df[,2]])
+#108/147 of the overlaps 73.5% of them agree in their call.
+
+# now calculate the false positive rate, assuming that the sw is the gold standard
+swNegTIL<-SWgenes[SWgenes$value == 0]
+
+# calculate the overlap between negative calls in SWgenes
+# and positive calls in cn.mops data
+falsePositives<-subsetByOverlaps(swNegTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any")
+# so a 345/2342 or ~14.7% of negative calls in sw have a call in cn.mops data.
+
+
+#####
+# Draw some plots
+#####
+
+png("output/integerdensity.png")
+plot(density(cnvdf[,-c(1:3,24)]), col="blue", main="", xlab="CNV integer copy number")
+lines(density(cnvdf[,24]), col = "red")
+legend("topright", c("Palmar Chico","TIL01"), col =c("blue","red"), pch = 15)
+dev.off()
+
+
+
+
 
