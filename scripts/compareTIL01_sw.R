@@ -66,6 +66,7 @@ CNgenes<-subsetByOverlaps(cn.mopsRanges,GRgenes,ignore.strand = TRUE, minoverlap
 
 # now find the SW gene names in GRgenes and extract those from the object
 swAll<- swAll[!duplicated(swAll[,1]),]
+
 #grab the Swanson-Wagner CNV genes from the GRgenes object, by name
 SWgenes<-GRgenes[names(GRgenes) %in% swAll[,1] ]
 
@@ -102,6 +103,25 @@ length(upDown.df[,1][upDown.df[,1] == upDown.df[,2]])
 
 # now calculate the false positive rate, assuming that the sw is the gold standard
 swNegTIL<-SWgenes[SWgenes$value == 0]
+
+# break it down to up and down CNVs
+
+# access up sw CNVs 
+up.idx<-as.matrix(findOverlaps(swTIL[swTIL$value == 1],cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
+upCNVs.df<-cbind("sw"=swTIL$value[up.idx[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[up.idx[,2]])
+length(upCNVs.df[,1][upCNVs.df[,1] == upCNVs.df[,2]])
+
+# of the 830 sw CNVs in TIL01 163 are up CNVs
+# we correctly call 27 of these thus 27/163 = 16.56%
+
+# access down sw CNVs 
+down.idx<-as.matrix(findOverlaps(swTIL[swTIL$value == -1],cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
+downCNVs.df<-cbind("sw"=swTIL$value[down.idx[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[down.idx[,2]])
+length(downCNVs.df[,1][downCNVs.df[,1] == downCNVs.df[,2]])
+
+# of the 830 sw CNVs in TIL01 667 are down CNVs
+# we correctly call 80 of these thus 80/667 = 12.0%
+
 
 # calculate the overlap between negative calls in SWgenes
 # and positive calls in cn.mops data

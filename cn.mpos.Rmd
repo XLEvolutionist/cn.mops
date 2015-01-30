@@ -119,11 +119,13 @@ Now I am just cheking iof the repeat region file is the correct one and I have t
 Of the 3805 CNV/PAV calls from the SW [paper](http://genome.cshlp.org/content/20/12/1689.long#T3), I filtered these to those called as PAVs/CNVs in `TIL01`. I then checked howm many of the genes with CNV calls actually have matched names in the AGPv3 gene set. This further limited the genes to 3155. This results in ~1000 PAVs/CNVs called in TIL01. Next we examine the overlap between calls from cn.mops and the sw chip.
 
 ```{r, echo = FALSE, eval=TRUE}
-table1<-data.frame(cbind(c(152,831-152,831),c(318,2342-318,318+2024)))
-colnames(table1)<-c("scored CHiP","absent CHiP")
-rownames(table1)<-c("scored cn.mops","absent cn.mops","total")
+table1<-data.frame(cbind(c(125,830-125,830),c(345,2342-345,2342)))
+colnames(table1)<-c("CNV CHiP","normal CHiP")
+rownames(table1)<-c("CNV cn.mops","normal cn.mops","total")
 print(table1)
 ```
+
+out of 147 overlaps (covering 125 genes) 108 cn.mops and sw calls are in the same direction (~73%)
 <br>
 <br>
 `TIL01` is a highly inbred line and as such shouold be homozygous, including for any PAVs/CNVs. Worryingly there are plenty of loci, actually even more in the outbred wild Palmar Chico population, that have odd  copy numbers (i.e. 1,3, 5). After inbreeding CN should be 0,2,4,6 etc etc indicating homozygosity at each loci. 
