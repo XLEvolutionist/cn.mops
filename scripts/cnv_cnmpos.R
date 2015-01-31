@@ -5,7 +5,7 @@
 
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("cn.mops")
-len<-100
+len<-10
 library(cn.mops)
 BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$")
 setwd("/group/jrigrp4/cn.mops/data")
@@ -17,12 +17,12 @@ for (i in chrs ) {
 	#try just chr 10 for now
 	#chrs<-10
 	#print(BAMFiles)
-	bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
+	bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len,parallel=11)
 
 	#resHaplo <- haplocn.mops(bamDataRanges)
 	#resCN <- calcIntegerCopyNumbers(resHaplo)
 	# This function performs the cn.mops algorithm for copy number detection in NGS data
-	res <- cn.mops(bamDataRanges)
+	res <- cn.mops(bamDataRanges,returnPosterior=TRUE,minWidth=4,seqAlgorithm="DNAcopy", parallel = 11)
 	resCNV <- calcIntegerCopyNumbers(res)
 
 	### transform GRanges to data.frame
@@ -33,5 +33,5 @@ for (i in chrs ) {
 	callcnv <- mcols(mycnv)
 	cnvdf <- cbind(cnvdf, callcnv)
 	setwd("/group/jrigrp4/cn.mops/output")
-	save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf") ) 
+	save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf","res") ) 
 }#for

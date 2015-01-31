@@ -5,6 +5,7 @@
 #SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
 #SBATCH -J cn.mops
 #SBATCH --mem=100000
+#SBATCH --cpus-per-task=12
 
 export R_LIBS="~/R/x86_64-pc-linux-gnu-library/3.1"
 
