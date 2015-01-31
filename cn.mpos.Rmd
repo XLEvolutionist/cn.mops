@@ -97,6 +97,20 @@ echo "Job Ending: "
 date
 ```
 
+The data are now availalbe and have been moved to my desktop in `/Users/simonrenny-byfield/CNV_PAV`. Calls from each chromosome were combined into a single file called `cnv_calls.RData`.
+
+##Testing CNV calls using Swanson-Wagner data and TIL01##
+
+Data from SW genome research [paper](http://genome.cshlp.org/content/20/12/1689.long#T3) is stored in `/Users/simonrenny-byfield/CNV_PAV/SW_data/SW_cnv_calls.csv`. The next step is to use this data to test our own CNV calls on TIL01. It is important to realize that some of the gene names have changed from RefV1 to RefV3.
+
+Now we need the gene annotations to see which CNVs overlap with the genes. I can see two ways to do this:
+
+1.  Use the untrimmed data set, that is without regard to CNVs overlapping repeats.
+2.  USe the final trimmmed dataset which we will finally use in the SFS and selection analysis.
+
+I think option 2 is probably the best so I will use the *final* set of CNVs.
+
+Now I am just cheking iof the repeat region file is the correct one and I have the most uptodate version of the repeat gff. As it turns out AGPv3.22 is NOT the same as AGPv3.25. I have now sourced AGPv3.22 annotations and everything is on order and ready to go.
 
 
 

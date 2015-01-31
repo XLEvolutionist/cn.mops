@@ -1,10 +1,12 @@
 # Simon Renny-Byfield, University of California, Davis
 # 17th Dec `14
 
+# Takes cn.mops output and filters removing CNVs estimated over repeat regions.
+
 library(dplyr)
 library(GenomicRanges)
 
-# define a function to fileter CNVs
+# define a function to filter CNVs
 # only works with apply
 # Define a useful function(s)
 lineByline<-function(x) {
@@ -19,15 +21,24 @@ lineByline<-function(x) {
   # return(overlapsAny(GRanges(seqnames = name, ranges = IRanges(start = s, end = e)), GRrep ))
 }# lineByline  
 
+#set the wd
+setwd("/Users/simonrenny-byfield/CNV_PAV")
 # load in the cn.mops data
-load("/Users/simonrenny-byfield/bamDataRanges100.RData")
+load("input_RData/cnv_calls.RData")
 # load in the Zea repeats bed file
-rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/ZeaRefV3.bed")
+load("input_RData/beds.RData")
 dim(cnvdf)
+
 # now filter the CNV calls for those that are deleted in at least one individual
-cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
+# I don't think this is neccesary, what if all the lines have upCNVs.
+# cnvdf<-cnvdf[rowSums(sapply(cnvdf, '%in%', "CN0") )>0,]
+
+#remove TIL01 from the Palmar Chico population
+cnvdf<-cnvdf[,-24]
+
 # clean up the data a bit
 cnvcp<-sapply(cnvdf, function(x) gsub("CN","",x))
+
 # make the data numeric
 cnvcp<-matrix(as.numeric(cnvcp), ncol =dim(cnvdf)[2], byrow=FALSE)
 
@@ -35,8 +46,8 @@ cnvcp<-matrix(as.numeric(cnvcp), ncol =dim(cnvdf)[2], byrow=FALSE)
 # assessing frequency a little troubling. Maybe wou should only consider those regions
 # with max CN per individuals is 2
 
-# remove cnvs that have high more than a diploid compliment.
-cnvcp<-cnvcp[apply(cnvcp[,-c(1:3)],1,function(x) max(x) < 3),]
+## remove cnvs that have high more than a diploid compliment.
+#cnvcp<-cnvcp[apply(cnvcp[,-c(1:3)],1,function(x) max(x) < 3),]
 # find the frequency of each cnv
 frequency<-rowSums(cnvcp[,-c(1:3)])
 
@@ -44,7 +55,7 @@ frequency<-rowSums(cnvcp[,-c(1:3)])
 GRcnvs<-GRanges(seqnames = cnvcp[,1], ranges = IRanges(start = cnvcp[,2], end = cnvcp[,3]))
 GRrep<-GRanges(seqnames=rep.bed$V1, ranges = IRanges(start=rep.bed$V2, end=rep.bed$V3))
 
-hits = overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
+hits <- overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
 
 # We may need a really funcky apply or for loop to get the minimum overlap correct.
 # what about making a GRanges object line by line over cnvdf and then seeing if the
@@ -53,7 +64,9 @@ hits = overlapsAny(GRcnvs,GRrep,ignore.strand = TRUE)
 # overlap changes with each cnv.
 
 screened<-cnvcp[!apply(cnvcp,1,function(x) lineByline(x)) ,]
+colnames(screened)<-colnames(cnvdf)
 frequency<-rowSums(screened[,-c(1:3)])
+save(file="output/screened_cnvs.RData", list=c(screened,frequency))
 # now for each unique frequency, grab the appropriate CNVs
 for ( i in unique(frequency) ) {
   print(i)
@@ -62,15 +75,15 @@ for ( i in unique(frequency) ) {
   index<-which(frequency == i)
   # trim the table
   out<-screened[index,1:3]
-  colnames(out)<-c("chrom","start","end")
+  #colnames(out)<-c("chrom","start","end")
   # format so it doesn't ouput scientific notation
-  out<-format(out,scientific=FALSE)
-  out[,1]<-gsub("\\s+","",out[,1])
+  #out<-format(out,scientific=FALSE)
+  #out[,1]<-gsub("\\s+","",out[,1])
   #out<-apply(out,1,function(x) paste(x[1],":",x[2],"-",x[3]))
   #out<-apply(out,2,function(x)gsub('\\s+', '',x))
   #print(head(out))
   # write out the table
-  write.table(out,file=paste("freq_",i,".bed", sep = ""), quote=FALSE, row.names = FALSE)
+  write.table(out,file=paste("bed_files/freq_",i,".bed", sep = ""), quote=FALSE, row.names = FALSE)
 }#for
 
 
