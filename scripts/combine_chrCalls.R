@@ -6,6 +6,7 @@
 
 #set up an empty variable to hold all the data
 all.data<-NULL
+all.res<-NULL
 for ( i in 1:10 )  {
   #set the wd
   setwd("/Users/simonrenny-byfield/CNV_PAV")
@@ -13,9 +14,11 @@ for ( i in 1:10 )  {
   print(dim(cnvdf))
   #merge the data
   all.data<-rbind(all.data,cnvdf)
+  save(file=paste0("cnv_object",i,".RData", res)
 }#for
 print(dim(all.data))
 
 #save the file
 cnvdf<-all.data
+res<-all.data
 save(file="cnv_calls.RData", cnvdf)
