@@ -24,7 +24,7 @@ for (i in chrs ) {
 	#resHaplo <- haplocn.mops(bamDataRanges)
 	#resCN <- calcIntegerCopyNumbers(resHaplo)
 	# This function performs the cn.mops algorithm for copy number detection in NGS data
-	res <- cn.mops(bamDataRanges,returnPosterior=TRUE, minWidth=3, parallel = 11)
+	res <- cn.mops(bamDataRanges,returnPosterior=TRUE, minWidth=1, parallel = 11)
 	resCNV <- calcIntegerCopyNumbers(res)
 
 	### transform GRanges to data.frame
