@@ -111,7 +111,6 @@ swNegTIL<-SWgenes[SWgenes$value == 0]
 
 # break it down to up and down CNVs
 
-
 # some important vairable
 totalUp<-length(swTIL[swTIL$value == 1])
 totalDown<-length(swTIL[swTIL$value == -1])
@@ -154,10 +153,11 @@ direction.df<-data.frame("up"=c(agreeUp,totalUp-agreeUp,totalUp,(agreeUp/totalUp
 rownames(direction.df)<-c("CNV cn.mops","no CNV cn.mops","total","%")
 write.table(file="summary_direction.txt", direction.df)
 
+# now examine the false positives
 falsePos.df<-data.frame("up CNVs" = c(length(falseUp), length(falseUp)+length(falseDown), 
-                      (length(falseUp)/(length(falseUp)+length(falseDown)))*100 ), 
-                          "down CNVs"=c(length(falseDown), length(falseUp)+length(falseDown), 
-                                        (length(falseDown)/(length(falseUp)+length(falseDown)))*100 ))
+                          (length(falseUp)/(length(falseUp)+length(falseDown)))*100 ), 
+                              "down CNVs"=c(length(falseDown), length(falseUp)+length(falseDown), 
+                                    (length(falseDown)/(length(falseUp)+length(falseDown)))*100 ))
 
 write.table(file="falsePos_direction.txt", falsePos.df)
 
