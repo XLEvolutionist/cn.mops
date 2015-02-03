@@ -1,19 +1,21 @@
 # Simon Renny-Byfield
 # 16/12/2014
-# do a CNV call for 20 teosine lines from Palmar Chico
+# do a CNV call for 20 teosine lines (plus TIL01) from Palmar Chico
 # modified from a script provided by Jinliang
+
+args <- commandArgs(trailingOnly = TRUE)
 
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("cn.mops")
-len<-10
+len<-100
 library(cn.mops)
-BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$")
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$",full.names=TRUE)
 setwd("/group/jrigrp4/cn.mops/data")
 
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
 #for each chromosome
 for (i in chrs ) {
-	setwd("/group/jrigrp4/cn.mops/data")
+	setwd(args[1])
 	#try just chr 10 for now
 	#chrs<-10
 	#print(BAMFiles)
@@ -22,7 +24,7 @@ for (i in chrs ) {
 	#resHaplo <- haplocn.mops(bamDataRanges)
 	#resCN <- calcIntegerCopyNumbers(resHaplo)
 	# This function performs the cn.mops algorithm for copy number detection in NGS data
-	res <- cn.mops(bamDataRanges,returnPosterior=TRUE,minWidth=4,seqAlgorithm="DNAcopy", parallel = 11)
+	res <- cn.mops(bamDataRanges,returnPosterior=TRUE,minWidth=1,segAlgorithm="DNAcopy", parallel = 11)
 	resCNV <- calcIntegerCopyNumbers(res)
 
 	### transform GRanges to data.frame
@@ -33,5 +35,6 @@ for (i in chrs ) {
 	callcnv <- mcols(mycnv)
 	cnvdf <- cbind(cnvdf, callcnv)
 	setwd("/group/jrigrp4/cn.mops/output")
-	save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf","res") ) 
+	save(file=paste0("detectvion_object_", i, ".RData"), res)
+	save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf") ) 
 }#for

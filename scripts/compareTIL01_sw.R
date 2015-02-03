@@ -23,14 +23,14 @@ setwd(args[1])
 
 # save(file="input_RData/beds.RData", list=c("rep.bed","gene.bed"))
 # load("input_RData/beds.RData")
-load("../input_RData/beds.RData")
+load("../../input_RData/beds.RData")
 
 # now load in the cnv calls
 # load("input_RData/cnv_calls.RData")
 load("cnv_calls.RData")
 
 # now load in the SW CNV data
-sw<-read.csv("../input_RData/SW_cnv_calls.csv")
+sw<-read.csv("../../input_RData/SW_cnv_calls.csv")
 swAll<-sw
 # extract TIL01 and the gene names
 sw<-sw[,c(1,4,34)]
