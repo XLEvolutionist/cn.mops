@@ -303,7 +303,7 @@ write.table(file="falsePos_direction.txt", falsePos.df)
 
 I have tried a few runs using various parameters, currently `minWidth` in the `cn.mops()` function is modified from 1 to 5 and I have tried a new segmentation algorithm `"DNAcopy"` to see if that results in improvement. Jeff also suggested using the *NAM* lines from `HapMap2` to see if we can get better results with those samples.
 
-**Alternatively use .bam files that have been filtered using MINMAPQ of 30**
+**Alternatively use .bam files that have been filtered using MINMAPQ **
 
 The next step is to try using a strict filter on the teosinte Palmar Chico population read mapping data. So I filtered these files using samtools and the following command:
 
@@ -333,5 +333,14 @@ echo "Ending Job: "
 date
 ```
 
+This produced zero overlaps between the chip data and the CNV calls (for TIL01). In response I changed the filtering to `-MINMAPQ=30`.
 
+** Changing window size for cn.mops runs **
+
+When loading in the bam files there is an option to use window size. As far as I can tell the function then reports average coverage in non-overlapping windows across the entire genome. The actual command looks like this:
+
+```
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
+```
+Where `len` is your desired window lenght.
 

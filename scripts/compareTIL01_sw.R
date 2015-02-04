@@ -10,7 +10,7 @@ library(rtracklayer)
 args <- commandArgs(trailingOnly = TRUE)
 
 # set the wd
-# setwd("/Users/simonrenny-byfield/CNV_PAV")
+#setwd("/Users/simonrenny-byfield/CNV_PAV/output/filt1")
 setwd(args[1])
 
 ####
@@ -66,7 +66,7 @@ GRgenes<-GRanges(seqnames=gene.bed$V1, ranges = IRanges(start=gene.bed$V2, end=g
 # now annnotate CNVs with genes they overlap
 ###
 
-#find the CNV calls from cn.mops that iverlap gene annotations
+#find the CNV calls from cn.mops that overlap gene annotations
 CNgenes<-subsetByOverlaps(cn.mopsRanges,GRgenes,ignore.strand = TRUE, minoverlap=1, type="any")
 
 # now find the SW gene names in GRgenes and extract those from the object
@@ -97,6 +97,7 @@ cnTIL<-CNgenes[CNgenes$TIL01_sorted.bam !=0]
 
 # now how many overlap with the cn.mops CNV calls?
 TILvsTIL<-subsetByOverlaps(swTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any")
+subsetByOverlaps(swTIL,CNgenes,ignore.strand = TRUE, minoverlap=1, type="any")
 # so only 125/830 or ~15.1% recall between the chip and the cn.mops method.
 
 # but do the calls agree???
