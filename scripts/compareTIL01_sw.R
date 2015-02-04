@@ -7,8 +7,11 @@ library(dplyr)
 library(GenomicRanges)
 library(rtracklayer)
 
+args <- commandArgs(trailingOnly = TRUE)
+
 # set the wd
-setwd("/Users/simonrenny-byfield/CNV_PAV")
+# setwd("/Users/simonrenny-byfield/CNV_PAV")
+setwd(args[1])
 
 ####
 # Load in the data
@@ -19,13 +22,15 @@ setwd("/Users/simonrenny-byfield/CNV_PAV")
 # rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/RepeatZeaRefV3.bed")
 
 # save(file="input_RData/beds.RData", list=c("rep.bed","gene.bed"))
-load("input_RData/beds.RData")
+# load("input_RData/beds.RData")
+load("../../input_RData/beds.RData")
 
 # now load in the cnv calls
-load("input_RData/cnv_calls.RData")
+# load("input_RData/cnv_calls.RData")
+load("cnv_calls.RData")
 
 # now load in the SW CNV data
-sw<-read.csv("SW_data/SW_cnv_calls.csv")
+sw<-read.csv("../../input_RData/SW_cnv_calls.csv")
 swAll<-sw
 # extract TIL01 and the gene names
 sw<-sw[,c(1,4,34)]
@@ -106,10 +111,13 @@ swNegTIL<-SWgenes[SWgenes$value == 0]
 
 # break it down to up and down CNVs
 
+# some important vairable
+totalUp<-length(swTIL[swTIL$value == 1])
+totalDown<-length(swTIL[swTIL$value == -1])
 # access up sw CNVs 
 up.idx<-as.matrix(findOverlaps(swTIL[swTIL$value == 1],cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
 upCNVs.df<-cbind("sw"=swTIL$value[up.idx[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[up.idx[,2]])
-length(upCNVs.df[,1][upCNVs.df[,1] == upCNVs.df[,2]])
+agreeUp<-length(upCNVs.df[,1][upCNVs.df[,1] == upCNVs.df[,2]])
 
 # of the 830 sw CNVs in TIL01 163 are up CNVs
 # we correctly call 27 of these thus 27/163 = 16.56%
@@ -117,7 +125,7 @@ length(upCNVs.df[,1][upCNVs.df[,1] == upCNVs.df[,2]])
 # access down sw CNVs 
 down.idx<-as.matrix(findOverlaps(swTIL[swTIL$value == -1],cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
 downCNVs.df<-cbind("sw"=swTIL$value[down.idx[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[down.idx[,2]])
-length(downCNVs.df[,1][downCNVs.df[,1] == downCNVs.df[,2]])
+agreeDown<-length(downCNVs.df[,1][downCNVs.df[,1] == downCNVs.df[,2]])
 
 # of the 830 sw CNVs in TIL01 667 are down CNVs
 # we correctly call 80 of these thus 80/667 = 12.0%
@@ -128,18 +136,29 @@ length(downCNVs.df[,1][downCNVs.df[,1] == downCNVs.df[,2]])
 falsePositives<-subsetByOverlaps(swNegTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any")
 # so a 345/2342 or ~14.7% of negative calls in sw have a call in cn.mops data.
 
+# how many of these are down CNVs
+falseDown<-subsetByOverlaps(swNegTIL,cnTIL[cnTIL$TIL01_sorted.bam == -1],ignore.strand = TRUE, minoverlap=1, type="any")
+falseUp<-subsetByOverlaps(swNegTIL,cnTIL[cnTIL$TIL01_sorted.bam == 1],ignore.strand = TRUE, minoverlap=1, type="any")
+###
+# Make some tables to output some quality estimates
+###
 
-#####
-# Draw some plots
-#####
+# a general summary of CNVs
+allCalls<-data.frame("CNV Chip"=c(length(TILvsTIL),length(swTIL)-length(TILvsTIL),length(swTIL),(length(TILvsTIL)/length(swTIL))*100),"no CNV Chip"= c(length(falsePositives),length(swNegTIL)-length(falsePositives),length(swNegTIL),(length(falsePositives)/length(swNegTIL))*100))
+rownames(allCalls)<-c("CNV cn.mops","no CNV cn.mops","total","%")
+write.table(file="summary_allCalls.txt", allCalls)
 
-png("output/integerdensity.png")
-plot(density(cnvdf[,-c(1:3,24)]), col="blue", main="", xlab="CNV integer copy number")
-lines(density(cnvdf[,24]), col = "red")
-legend("topright", c("Palmar Chico","TIL01"), col =c("blue","red"), pch = 15)
-dev.off()
+# now for the overlapping CNV calls
+direction.df<-data.frame("up"=c(agreeUp,totalUp-agreeUp,totalUp,(agreeUp/totalUp)*100),"down"=c(agreeDown,totalDown=agreeDown,totalDown,(agreeDown/totalDown)*100))
+rownames(direction.df)<-c("CNV cn.mops","no CNV cn.mops","total","%")
+write.table(file="summary_direction.txt", direction.df)
 
+# now examine the false positives
+falsePos.df<-data.frame("up CNVs" = c(length(falseUp), length(falseUp)+length(falseDown), 
+                          (length(falseUp)/(length(falseUp)+length(falseDown)))*100 ), 
+                              "down CNVs"=c(length(falseDown), length(falseUp)+length(falseDown), 
+                                    (length(falseDown)/(length(falseUp)+length(falseDown)))*100 ))
 
-
+write.table(file="falsePos_direction.txt", falsePos.df)
 
 

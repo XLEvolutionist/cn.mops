@@ -2,17 +2,22 @@
 # 26th Jan `15
 # UC Davis
 
+args <- commandArgs(trailingOnly = TRUE)
+
+# set the wd
+# setwd("/Users/simonrenny-byfield/CNV_PAV")
+setwd(args[1])
 # Used to combine seperate chr runs of cn.mops into single data file
 
 #set up an empty variable to hold all the data
 all.data<-NULL
+all.res<-NULL
 for ( i in 1:10 )  {
-  #set the wd
-  setwd("/Users/simonrenny-byfield/CNV_PAV")
   load(paste("bamDataRanges_",i,".RData",sep=""))
   print(dim(cnvdf))
   #merge the data
   all.data<-rbind(all.data,cnvdf)
+  #save(file=paste0("cnv_object",i,".RData"), res)
 }#for
 print(dim(all.data))
 
