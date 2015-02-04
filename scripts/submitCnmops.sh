@@ -1,6 +1,6 @@
 #!/bin/bash
 #OUTDIR=/group/jrigrp4/cn.mops/output
-#SBATCH -D /group/jrigrp4/cn.mops/output/run3
+#SBATCH -D /group/jrigrp4/cn.mops/output/run4
 #SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
 #SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
 #SBATCH -J cn.mops
@@ -11,6 +11,10 @@ export R_LIBS="~/R/x86_64-pc-linux-gnu-library/3.1"
 
 echo "Starting cn.mops job: "
 date
+echo "Preverving run: "
+cp  /group/jrigrp4/cn.mops/scripts/cnv_cnmposFiltered.R cnv_cnmposFiltered.R
+cp /group/jrigrp4/cn.mops/scripts/combine_chrCalls.R  combine_chrCalls.R
+cp /group/jrigrp4/cn.mops/scripts/compareTIL01_sw.R  compareTIL01_sw.R
 
 cmd="Rscript /group/jrigrp4/cn.mops/scripts/cnv_cnmpos.R `pwd`"
 echo $cmd

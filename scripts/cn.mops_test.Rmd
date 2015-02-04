@@ -1,0 +1,233 @@
+---
+title: "Testing *cn.mops* using TIL01 as reference"
+author: "Simon Renny-Byfield"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+Jeff mentioned that I should examine the cnv calls of [cn.ops](http://www.bioinf.jku.at/software/cnmops/) using TIL01 and TIL11 which already have cnvs called using a chip, detailed in a [Swanson-Wagner](http://www.ncbi.nlm.nih.gov/pubmed/21036921) paper. The issue I can foresee is that the analysis was done with the maize reference version 2, whereas we are working with maize ref3... Perhaps this means having to convert co-ordinates, or revert back to maize ref2 to assess the hit rate of cn.mops.
+
+##Mapping the TIL data using BWA-MEM##
+
+The data for TIL01 and TIL11 can be found in `/group/jrigrp4/cn.mops/TIL_data` on farm. 
+
+The first step is to generate index files for the refercence genome. The reference in question is stored in `/group/jrigrp4/teosinte_parents/genomes` and I used the following command to generate the index:
+```
+screen bwa index -a bwtsw Zea_mays.AGPv3.22.dna.genome.fa
+```
+Following this the data are mapped using BWA-MEM and a batch script:
+```
+!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/TIL_data
+#SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
+#SBATCH -J bwa
+#SBATCH --mem=10000
+#SBATCH --cpus-per-task 10
+
+
+echo "Starting bwa job: "
+date
+
+cmd="bwa mem -M -t 10 -v 1 /group/jrigrp4/teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq | samtools view -Sb - > TIL01.bam"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```
+
+The mapping bhas been done and I attempted to run the cn.mpos with this script:
+```
+# Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("cn.mops")
+len<-100
+library(cn.mops)
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/TIL_data", pattern=".bam$")
+setwd("/group/jrigrp4/cn.mops/TIL_data")
+
+chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+#for each chromosome
+for (i in chrs ) {
+        #setwd("/group/jrigrp4/cn.mops/data")
+        #try just chr 10 for now
+        #chrs<-10
+        #print(BAMFiles)
+        bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
+
+        #resHaplo <- haplocn.mops(bamDataRanges)
+        #resCN <- calcIntegerCopyNumbers(resHaplo)
+        # This function performs the cn.mops algorithm for copy number detection in NGS data
+        res <- cn.mops(bamDataRanges)
+        resCNV <- calcIntegerCopyNumbers(res)
+
+        ### transform GRanges to data.frame
+        mycnv <- cnvr(resCNV)
+
+
+        cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+        callcnv <- mcols(mycnv)
+        cnvdf <- cbind(cnvdf, callcnv)
+        setwd("/group/jrigrp4/cn.mops/TIL_data")
+        save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf") )
+}#for
+```
+but there are a few error, as follows:
+```
+Reading file: TIL01.bam
+  1
+
+
+Error in cn.mops(bamDataRanges) :
+  It is not possible to run cn.mops on only ONE sample.
+In addition: Warning message:
+In FUN("TIL01.bam"[[1L]], ...) : No reads found in file: TIL01.bam
+You may have to change the mode to "paired" or"unpaired"
+Execution halted
+```
+
+I realised I had added the `-p` flag to the `bwa mem` run resulting in the program thinking the first file was an interleaved fastq file, rather than having pairs in seperate files (which is the case here). So the mapping needs to be done again as above (the `-p` flag is now removed).
+
+Also, the resulting `.bam` files did not have a header region, possibly the resulting in the error above. I have changed the pipe to samtools (from bwa mem) to:
+```
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/TIL_data
+#SBATCH -o /group/jrigrp4/cn.mops/logs/bwa_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/bwa_err_log-%j.txt
+#SBATCH -J bwa
+#SBATCH --mem=10000
+#SBATCH --cpus-per-task 10
+
+
+echo "Starting bwa job: "
+date
+
+cmd="bwa mem -M -t 10 -v 1 Zmays_284_AGPv3.hardmasked_shortName.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq  | samtools view -bSh  - > $
+echo $cmd
+eval $cmd
+cmd="samtools sort TIL01.bam TIL01_sorted"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```
+This now includes the `-h` flag which instructs samtools to keep the header region whilst printing out the `.bam` file.
+
+I'm now re-running the mapping with the hope that this will resolve the problem. Additionally, I have run the samples as `unpaired` in the `cn.mops` call because I only have partial data for TIL11 (which isn't in the Swanson-Wagner paper anyways).
+
+The mapping worked and I ran cn.mops on the TIL01 and TIL11 samples using:
+```
+# Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("cn.mops")
+len<-100
+library(cn.mops)
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/TIL_data", pattern="sorted.bam$")
+setwd("/group/jrigrp4/cn.mops/TIL_data")
+
+chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+#for each chromosome
+for (i in chrs ) {
+        #setwd("/group/jrigrp4/cn.mops/data")
+        #try just chr 10 for now
+        #chrs<-10
+        #print(BAMFiles)
+        bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="unpaired",WL=len)
+        print("here")
+        #resHaplo <- haplocn.mops(bamDataRanges)
+        #resCN <- calcIntegerCopyNumbers(resHaplo)
+        # This function performs the cn.mops algorithm for copy number detection in NGS data
+        res <- cn.mops(bamDataRanges)
+        resCNV <- calcIntegerCopyNumbers(res)
+
+        ### transform GRanges to data.frame
+        mycnv <- cnvr(resCNV)
+
+
+        cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+        callcnv <- mcols(mycnv)
+        cnvdf <- cbind(cnvdf, callcnv)
+        setwd("/group/jrigrp4/cn.mops/TIL_data")
+        save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf") )
+}#for
+```
+
+However, looking at the data it seems to me that it isn't quite right. TIL11 (the one with only 15 GB on sequence data) seems to be much more variable than TIL01. Additionally there are nearly 200,000 CNV calls, this seems excessively high IMHO.
+
+##Alternative appraoch: include TIL01 with Palmar Chico samples##
+
+I think it might be better to run the TIL01 sample with the Palmar Chico samples. I think this is better because `cn.mops` works well with many samples, and running only two is not producing very good results.
+
+I will re-map the TIL01 data set using `BWA MEM` in paired-end mode then add the resulting .bam file to the correct folder and run the cn.mops analysis with 21 samples (20 Palmar Chico and TIL01). I use the following command to map the reads:
+```
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/TIL_data
+#SBATCH -o /group/jrigrp4/cn.mops/logs/bwa_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/bwa_err_log-%j.txt
+#SBATCH -J bwa
+#SBATCH --mem=10000
+#SBATCH --cpus-per-task 10
+
+
+echo "Starting bwa job: "
+date
+
+cmd="bwa mem -M -t 10 -v 1 Zmays_284_AGPv3.hardmasked_shortName.fa TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq  | samtools view -bSh  - > TIL01.bam"
+echo $cmd
+eval $cmd
+cmd="samtools sort TIL01.bam TIL01_sorted"
+echo $cmd
+eval $cmd
+cmd="samtools index TIL01_sorted.bam"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```
+On setting of the cn.mops run I discovered that the reference sequence that was used by Vince to map the first teosinte lines was not the same as I had used to map TIL01. This means I will have to re-map to the same reference sequence. This is achieved via a very similar script as above but pointing to a different refernce:
+
+```
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/TIL_data
+#SBATCH -o /group/jrigrp4/cn.mops/logs/bwa_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/bwa_err_log-%j.txt
+#SBATCH -J bwa
+#SBATCH --mem=10000
+#SBATCH --cpus-per-task 10
+
+
+echo "Starting bwa job: "
+date
+
+cmd="bwa mem -M -t 10 -v 1 /home/vince251/data/refgen3-hapmap/maize3.fa.gz TIL01_3510_3807_3510_N_TIP521_4_R1.fastq TIL01_3510_3807_3510_N_TIP521_4_R2.fastq  | samtools view -bSh  - > TIL01.bam"
+echo $cmd
+eval $cmd
+cmd="samtools sort TIL01.bam TIL01_sorted"
+echo $cmd
+eval $cmd
+cmd="samtools index TIL01_sorted.bam"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```

@@ -1,0 +1,346 @@
+---
+title: "Running cn.mops on 20 teosinte from Palmar Chico"
+author: "Simon Renny-Byfield"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+This document records efforts to run the `R` package [`cn.mops`](http://www.bioconductor.org/packages/release/bioc/html/cn.mops.html) on 20 teosinte individuals from the Palmar Chico population, Mexico. As input to the program I have sorted `.bam` files (mapped by Vince Buffalo using [paap.py](https://github.com/vsbuffalo/paap)). These files symlinked in `/group/jrigrp4/cn.mops/data` from another location `/group/jrigrp4/teosinte-parents/aln/`.
+
+Working in the `/group/jrigrp4/cn.mops/` directory I indexed the appropriate `.bam` files using the following scrip `scripts/index.bam.sh`:
+```
+#!/bin/bash -l
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/output
+#SBATCH -o /group/jrigrp4/cn.mops/logs/index_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/index_err_log-%j.txt
+#SBATCH -J index
+#SBATCH --array=0-19
+#SBATCH --mem-per-cpu=8000
+
+##Simon Renny-Byfield, UC Davis, December 16 2014
+
+
+echo "Starting Job:"
+date
+
+files=($(ls -d ../data/*sorted.bam))
+
+#now index each .bam file
+
+cmd="samtools index ${files[$SLURM_ARRAY_TASK_ID]}"
+echo $cmd
+eval $cmd
+
+echo "End Job: "
+date
+```
+Follwoing this I modified a script the Jinliang gave me. This script reads in the bam files, assess coverage and outputs `.bed` style output for CNVs and PAVs. The script is saved as `scripts/cnv_cnmpos.R`. At first I limited the analysis to the first 3 `.bam` files in the list. This is done by modifying the bam files list like this `BAMFiles[1:3]`.
+```
+# Simon Renny-Byfield
+# 16/12/2014
+# do a CNV call for 20 teosine lines from Palmar Chico
+# modified from a script provided by Jinliang
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("cn.mops")
+len<-100
+library(cn.mops)
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data", pattern="sorted.bam$")
+setwd("/group/jrigrp4/cn.mops/data")
+
+chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+#for each chromosome
+for (i in chrs ) {
+        setwd("/group/jrigrp4/cn.mops/data")
+        #try just chr 10 for now
+        #chrs<-10
+        #print(BAMFiles)
+        bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
+
+        #resHaplo <- haplocn.mops(bamDataRanges)
+        #resCN <- calcIntegerCopyNumbers(resHaplo)
+        # This function performs the cn.mops algorithm for copy number detection in NGS data
+        res <- cn.mops(bamDataRanges)
+        resCNV <- calcIntegerCopyNumbers(res)
+
+        ### transform GRanges to data.frame
+        mycnv <- cnvr(resCNV)
+
+
+        cnvdf <- data.frame(chr=as.character(seqnames(mycnv)), start=start(mycnv), end=end(mycnv))
+        callcnv <- mcols(mycnv)
+        cnvdf <- cbind(cnvdf, callcnv)
+        setwd("/group/jrigrp4/cn.mops/output")
+        save(file=paste0("bamDataRanges_", i, ".RData"), list=c("bamDataRanges","cnvdf") )
+}#for
+```
+Importantly this must be run from insde a slurm script. I used the following to get the job done:
+```
+#!/bin/bash
+#OUTDIR=/group/jrigrp4/cn.mops/output
+#SBATCH -D /group/jrigrp4/cn.mops/output
+#SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
+#SBATCH -J cn.mops
+#SBATCH --mem=24000
+
+export R_LIBS="~/R/x86_64-pc-linux-gnu-library/3.1"
+
+echo "Starting cn.mops job: "
+date
+
+cmd="Rscript ../scripts/cnv_cnmpos.R"
+echo $cmd
+eval $cmd
+
+echo "Job Ending: "
+date
+```
+
+The data are now availalbe and have been moved to my desktop in `/Users/simonrenny-byfield/CNV_PAV`. Calls from each chromosome were combined into a single file called `cnv_calls.RData`.
+
+##Testing CNV calls using Swanson-Wagner data and TIL01##
+
+Data from SW genome research [paper](http://genome.cshlp.org/content/20/12/1689.long#T3) is stored in `/Users/simonrenny-byfield/CNV_PAV/SW_data/SW_cnv_calls.csv`. The next step is to use this data to test our own CNV calls on TIL01. It is important to realize that some of the gene names have changed from RefV1 to RefV3.
+
+Now we need the gene annotations to see which CNVs overlap with the genes. I can see two ways to do this:
+
+1.  Use the untrimmed data set, that is without regard to CNVs overlapping repeats.
+2.  USe the final trimmmed dataset which we will finally use in the SFS and selection analysis.
+
+I think option 2 is probably the best so I will use the *final* set of CNVs.
+
+Now I am just cheking iof the repeat region file is the correct one and I have the most uptodate version of the repeat gff. As it turns out AGPv3.22 is NOT the same as AGPv3.25. I have now sourced AGPv3.22 annotations and everything is on order and ready to go.
+
+**(In)Congruence between SW ChiP and NGS data**
+
+Of the 3805 CNV/PAV calls from the SW [paper](http://genome.cshlp.org/content/20/12/1689.long#T3), I filtered these to those called as PAVs/CNVs in `TIL01`. I then checked howm many of the genes with CNV calls actually have matched names in the AGPv3 gene set. This further limited the genes to 3155. This results in ~1000 PAVs/CNVs called in TIL01. Next we examine the overlap between calls from cn.mops and the sw chip.
+
+```{r, echo = FALSE, eval=TRUE}
+table1<-data.frame(cbind(c(125,830-125,830),c(345,2342-345,2342)))
+colnames(table1)<-c("CNV CHiP","normal CHiP")
+rownames(table1)<-c("CNV cn.mops","normal cn.mops","total")
+print(table1)
+```
+
+out of 147 overlaps (covering 125 genes) 108 cn.mops and sw calls are in the same direction (~73%)
+<br>
+<br>
+`TIL01` is a highly inbred line and as such shouold be homozygous, including for any PAVs/CNVs. Worryingly there are plenty of loci, actually even more in the outbred wild Palmar Chico population, that have odd  copy numbers (i.e. 1,3, 5). After inbreeding CN should be 0,2,4,6 etc etc indicating homozygosity at each loci. 
+
+![Integer copy number](/Users/simonrenny-byfield/CNV_PAV/output/integerdensity.png)
+
+**An examination of false positive (FP) and true postive rates (TP)**
+
+At the moment the FP and TP positive rates are not good. I have used the following script to gestimate the success of cn.mops runs.
+
+```{r, eval = FALSE}
+# A brief scrip to compare CNV calls from Swanson-Wagner, 
+# with CNVs called from the cn.mops algorithm.
+# Simon Renny-Byfield, UC Davis, Jan 2015
+
+# load in the R modules 
+library(dplyr)
+library(GenomicRanges)
+library(rtracklayer)
+
+args <- commandArgs(trailingOnly = TRUE)
+
+# set the wd
+# setwd("/Users/simonrenny-byfield/CNV_PAV")
+setwd(args[1])
+
+####
+# Load in the data
+####
+
+# firstly load in the gene and repeat data.
+# gene.bed<-read.table("/Users/simonrenny-byfield/maize_genome/GeneZeaRefV3.bed")
+# rep.bed<-read.table("/Users/simonrenny-byfield/maize_genome/RepeatZeaRefV3.bed")
+
+# save(file="input_RData/beds.RData", list=c("rep.bed","gene.bed"))
+# load("input_RData/beds.RData")
+load("../input_RData/beds.RData")
+
+# now load in the cnv calls
+# load("input_RData/cnv_calls.RData")
+load("cnv_calls.RData")
+
+# now load in the SW CNV data
+sw<-read.csv("../input_RData/SW_cnv_calls.csv")
+swAll<-sw
+# extract TIL01 and the gene names
+sw<-sw[,c(1,4,34)]
+#produce a list of genes with no evidence for CNVs in TIL01
+swNeg<-subset(sw,sw$TIL1 == 0 )
+
+####
+# Extract the useful data
+####
+
+#modify the cn.mops data to look like the sw data
+cnvdf<-sapply(cnvdf, function(x) as.numeric(gsub("CN","",x)))
+# create a modify a temp df
+tempdf<-cnvdf[,-c(1:3)]
+tempdf[tempdf<2] <--1
+tempdf[tempdf>2] <-1
+tempdf[tempdf==2] <-0
+# attribute this back to cnvdf
+cnvdf[,-c(1:3)]<-tempdf
+
+###
+# Set up the some GRanges objects 
+###
+
+# create a GRanges object from the data frame
+cn.mopsRanges<-makeGRangesFromDataFrame(data.frame(cnvdf), keep.extra.columns = TRUE)
+# create a Granges object from the repeat data
+GRrep<-GRanges(seqnames=rep.bed$V1, ranges = IRanges(start=rep.bed$V2, end=rep.bed$V3))
+# dito for the gene annotationns
+GRgenes<-GRanges(seqnames=gene.bed$V1, ranges = IRanges(start=gene.bed$V2, end=gene.bed$V3, names = gene.bed$V4))
+
+###
+# now annnotate CNVs with genes they overlap
+###
+
+#find the CNV calls from cn.mops that iverlap gene annotations
+CNgenes<-subsetByOverlaps(cn.mopsRanges,GRgenes,ignore.strand = TRUE, minoverlap=1, type="any")
+
+# now find the SW gene names in GRgenes and extract those from the object
+swAll<- swAll[!duplicated(swAll[,1]),]
+
+#grab the Swanson-Wagner CNV genes from the GRgenes object, by name
+SWgenes<-GRgenes[names(GRgenes) %in% swAll[,1] ]
+
+# now grab the appropriate CNV calls from the swAll df
+swTrim<-swAll[swAll[,1] %in% names(SWgenes),c(1,34)]
+
+# add a metadata column of the sw CNV calls for TIL01
+values(SWgenes)<-swTrim[,2]
+
+######
+# Calculate overlaps between CNgenes (i.e. genes with cn.mops calls)
+# and SWgenes (i.e. genes that have Swanson-Wagner calls)
+######
+
+# now figure out the total overlap between cnv calls in TIL01 and all of the 
+# calls in sw, regardless of whether it is in TIL01 or not.
+totalOverlap<-subsetByOverlaps(SWgenes,CNgenes,ignore.strand = TRUE, minoverlap=1, type="any")
+
+# grab the sw genes with CNV calls in TIL01
+swTIL<-SWgenes[SWgenes$value != 0]
+# grab the cn.mops genes with calls in TIL01
+cnTIL<-CNgenes[CNgenes$TIL01_sorted.bam !=0]
+
+# now how many overlap with the cn.mops CNV calls?
+TILvsTIL<-subsetByOverlaps(swTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any")
+# so only 125/830 or ~15.1% recall between the chip and the cn.mops method.
+
+# but do the calls agree???
+idx.compare<-as.matrix(findOverlaps(swTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
+upDown.df<-cbind("sw"=swTIL$value[idx.compare[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[idx.compare[,2]])
+
+length(upDown.df[,1][upDown.df[,1] == upDown.df[,2]])
+#108/147 of the overlaps 73.5% of them agree in their call.
+
+# now calculate the false positive rate, assuming that the sw is the gold standard
+swNegTIL<-SWgenes[SWgenes$value == 0]
+
+# break it down to up and down CNVs
+
+# some important vairable
+totalUp<-length(swTIL[swTIL$value == 1])
+totalDown<-length(swTIL[swTIL$value == -1])
+# access up sw CNVs 
+up.idx<-as.matrix(findOverlaps(swTIL[swTIL$value == 1],cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
+upCNVs.df<-cbind("sw"=swTIL$value[up.idx[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[up.idx[,2]])
+agreeUp<-length(upCNVs.df[,1][upCNVs.df[,1] == upCNVs.df[,2]])
+
+# of the 830 sw CNVs in TIL01 163 are up CNVs
+# we correctly call 27 of these thus 27/163 = 16.56%
+
+# access down sw CNVs 
+down.idx<-as.matrix(findOverlaps(swTIL[swTIL$value == -1],cnTIL,ignore.strand = TRUE, minoverlap=1, type="any"))
+downCNVs.df<-cbind("sw"=swTIL$value[down.idx[,1]],"cn.mops"=cnTIL$TIL01_sorted.bam[down.idx[,2]])
+agreeDown<-length(downCNVs.df[,1][downCNVs.df[,1] == downCNVs.df[,2]])
+
+# of the 830 sw CNVs in TIL01 667 are down CNVs
+# we correctly call 80 of these thus 80/667 = 12.0%
+
+
+# calculate the overlap between negative calls in SWgenes
+# and positive calls in cn.mops data
+falsePositives<-subsetByOverlaps(swNegTIL,cnTIL,ignore.strand = TRUE, minoverlap=1, type="any")
+# so a 345/2342 or ~14.7% of negative calls in sw have a call in cn.mops data.
+
+# how many of these are down CNVs
+falseDown<-subsetByOverlaps(swNegTIL,cnTIL[cnTIL$TIL01_sorted.bam == -1],ignore.strand = TRUE, minoverlap=1, type="any")
+falseUp<-subsetByOverlaps(swNegTIL,cnTIL[cnTIL$TIL01_sorted.bam == 1],ignore.strand = TRUE, minoverlap=1, type="any")
+###
+# Make some tables to output some quality estimates
+###
+
+# a general summary of CNVs
+allCalls<-data.frame("CNV Chip"=c(length(TILvsTIL),length(swTIL)-length(TILvsTIL),length(swTIL),(length(TILvsTIL)/length(swTIL))*100),"no CNV Chip"= c(length(falsePositives),length(swNegTIL)-length(falsePositives),length(swNegTIL),(length(falsePositives)/length(swNegTIL))*100))
+rownames(allCalls)<-c("CNV cn.mops","no CNV cn.mops","total","%")
+write.table(file="summary_allCalls.txt", allCalls)
+
+# now for the overlapping CNV calls
+direction.df<-data.frame("up"=c(agreeUp,totalUp-agreeUp,totalUp,(agreeUp/totalUp)*100),"down"=c(agreeDown,totalDown=agreeDown,totalDown,(agreeDown/totalDown)*100))
+rownames(direction.df)<-c("CNV cn.mops","no CNV cn.mops","total","%")
+write.table(file="summary_direction.txt", direction.df)
+
+# now examine the false positives
+falsePos.df<-data.frame("up CNVs" = c(length(falseUp), length(falseUp)+length(falseDown), 
+                          (length(falseUp)/(length(falseUp)+length(falseDown)))*100 ), 
+                              "down CNVs"=c(length(falseDown), length(falseUp)+length(falseDown), 
+                                    (length(falseDown)/(length(falseUp)+length(falseDown)))*100 ))
+
+write.table(file="falsePos_direction.txt", falsePos.df)
+```
+
+I have tried a few runs using various parameters, currently `minWidth` in the `cn.mops()` function is modified from 1 to 5 and I have tried a new segmentation algorithm `"DNAcopy"` to see if that results in improvement. Jeff also suggested using the *NAM* lines from `HapMap2` to see if we can get better results with those samples.
+
+**Alternatively use .bam files that have been filtered using MINMAPQ **
+
+The next step is to try using a strict filter on the teosinte Palmar Chico population read mapping data. So I filtered these files using samtools and the following command:
+
+```
+#!/bin/bash
+#SBATCH -D /group/jrigrp4/cn.mops/data/filtered_bams
+#SBATCH -o /group/jrigrp4/cn.mops/logs/out_log-%j.txt
+#SBATCH -e /group/jrigrp4/cn.mops/logs/err_log-%j.txt
+#SBATCH -J filter
+#SBATCH  --cpus-per-task 4
+#SBATCH --array=0-20
+
+
+echo "Starting Job: "
+date
+
+cd ..
+files=(*.bam)
+cd filtered_bams/
+
+file=${files[$SLURM_ARRAY_TASK_ID]}
+cmd="samtools view -bhq 30 ../$file > filtered_$file"
+echo $cmd
+eval $cmd
+
+echo "Ending Job: "
+date
+```
+
+This produced zero overlaps between the chip data and the CNV calls (for TIL01). In response I changed the filtering to `-MINMAPQ=30`.
+
+** Changing window size for cn.mops runs **
+
+When loading in the bam files there is an option to use window size. As far as I can tell the function then reports average coverage in non-overlapping windows across the entire genome. The actual command looks like this:
+
+```
+bamDataRanges <- getReadCountsFromBAM(BAMFiles, refSeqName=i,  mode="paired",WL=len)
+```
+Where `len` is your desired window lenght.
+
