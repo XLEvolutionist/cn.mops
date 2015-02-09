@@ -10,8 +10,8 @@ library(rtracklayer)
 args <- commandArgs(trailingOnly = TRUE)
 
 # set the wd
-#setwd("/Users/simonrenny-byfield/CNV_PAV/output/filt1")
-setwd(args[1])
+setwd("/Users/simonrenny-byfield/CNV_PAV/output/filt4")
+#setwd(args[1])
 
 ####
 # Load in the data

@@ -10,10 +10,10 @@ args <- commandArgs(trailingOnly = TRUE)
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("rtracklayer")
 
-len<-50000
+len<-1000
 library(cn.mops)
 library(rtracklayer)
-BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data/filtered_bams10/", pattern=".bam$",full.names=TRUE)
+BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data/filtered_genes10/", pattern=".bam$",full.names=TRUE)
 #setwd("/group/jrigrp4/cn.mops/data")
 setwd(args[1])
 chrs <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
