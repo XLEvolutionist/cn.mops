@@ -1,6 +1,6 @@
 #!/bin/bash
 #OUTDIR=/group/jrigrp4/cn.mops/output
-#SBATCH -D /group/jrigrp4/cn.mops/output/filt3
+#SBATCH -D /group/jrigrp4/cn.mops/output/filt7
 #SBATCH -o /group/jrigrp4/cn.mops/logs/cn.mops_out_log-%j.txt
 #SBATCH -e /group/jrigrp4/cn.mops/logs/cn.mops_err_log-%j.txt
 #SBATCH -J cn.mops
