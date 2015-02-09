@@ -15,9 +15,9 @@ library(cn.mops)
 library(rtracklayer)
 library(GenomicRanges)
 # make a GRanges object form the bed file
-# dito for the gene annotationns
 gene.bed<-read.table("/group/jrigrp4/freec/maize3/GeneZeaRefV3.bed")
-GRgenes<-GRanges(seqnames=gene.bed$V1, ranges = IRanges(start=gene.bed$V2, end=gene.bed$V3, names = gene.bed$V4))
+# add 1 to each poisition (bed files are ofset by -1).
+GRgenes<-GRanges(seqnames=gene.bed$V1, ranges = IRanges(start=gene.bed$V2-1, end=gene.bed$V3-1, names = gene.bed$V4))
 
 BAMFiles <- list.files(path="/group/jrigrp4/cn.mops/data/filtered_genes10/", pattern=".bam$",full.names=TRUE)
 #setwd("/group/jrigrp4/cn.mops/data")
